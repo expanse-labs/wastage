@@ -874,6 +874,11 @@ CLUSTER_NAME=""
 COUNTRY=""
 EMAIL=""
 
+if [ "$LOCAL_ONLY" = "false" ] && [ ! -t 0 ]; then
+    info "To join the leaderboard and enter your email, run:"
+    info "  curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh"
+fi
+
 if [ "$LOCAL_ONLY" = "false" ] && [ -t 0 ]; then
     printf "Show your cluster on the leaderboard? (y/N): "
     read -r lb_choice

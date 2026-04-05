@@ -174,6 +174,20 @@
 			</div>
 		</div>
 
+		<!-- SLURM tracking limitation note -->
+		{#if r.scheduler_type === 'slurm' && r.total_core_hours > 0 && r.wasted_core_hours > 0}
+			{@const trackedPct = Math.round((r.wasted_core_hours / (r.total_core_hours * (r.avg_cpu_waste_pct / 100))) * 100)}
+			{#if trackedPct < 80}
+				<div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+					<p class="text-sm text-amber-800">
+						<span class="font-medium">Some jobs on this cluster lack CPU accounting.</span>
+						SLURM's sacct only tracks jobs with cgroup data enabled. The waste figures above are based on tracked jobs only.
+						<a href="https://app.expanse.sh" class="underline font-medium">Expanse tracks all jobs via cgroups (free) →</a>
+					</p>
+				</div>
+			{/if}
+		{/if}
+
 		<!-- Failed jobs banner -->
 		{#if r.failed_jobs > 0}
 			<div class="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
