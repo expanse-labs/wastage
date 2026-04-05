@@ -15,8 +15,8 @@ const SALT = IP_SALT || crypto.randomUUID();
 
 /** Accept an aggregate waste report from the CLI scanner and store it. */
 export const POST: RequestHandler = async ({ request }) => {
-	const contentLength = parseInt(request.headers.get('content-length') || '0');
-	if (contentLength > 4096) {
+	const contentLength = parseInt(request.headers.get('content-length') ?? '-1');
+	if (contentLength < 0 || contentLength > 4096) {
 		return json({ error: 'Request too large' }, { status: 413 });
 	}
 

@@ -603,7 +603,7 @@ if [ "$MODE" = "kubernetes" ]; then
             CAT_CPU[$category]=$(echo "${CAT_CPU[$category]:-0} $cpu_waste" | awk '{printf "%.2f", $1+$2}')
             CAT_MEM[$category]=$(echo "${CAT_MEM[$category]:-0} $mem_waste" | awk '{printf "%.2f", $1+$2}')
 
-        done <<< "$K8S_RESULT"
+        done <<< "$METRICS_AVG"
 
         AVG_CPU_WASTE=$(echo "$SUM_CPU_WASTE $TOTAL_JOBS" | awk '{if($2>0) printf "%.2f",$1/$2; else print "0"}')
         AVG_MEM_WASTE=$(echo "$SUM_MEM_WASTE $TOTAL_JOBS" | awk '{if($2>0) printf "%.2f",$1/$2; else print "0"}')
@@ -626,7 +626,7 @@ if [ "$MODE" = "kubernetes" ]; then
     else
         # No node access: estimate cost from pod-level CPU requests × default rate
         # Sum requested CPU across all pods (in millicores), convert to core-hours for the sample window
-        POD_CPU_COST=$(echo "$K8S_RESULT" | awk -F'\t' '
+        POD_CPU_COST=$(echo "$METRICS_AVG" | awk -F'\t' '
         { req_cpu += $3 }
         END {
             core_hours = (req_cpu / 1000) * (90 / 3600)  # 90-second sample
