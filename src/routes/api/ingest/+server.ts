@@ -7,7 +7,11 @@ import { ingestSchema, validateHistogram } from '$lib/validation.js';
 import { createHash } from 'crypto';
 import { env } from '$env/dynamic/private';
 
-const IP_SALT = env.IP_HASH_SALT || 'wastage-default-salt';
+const IP_SALT = env.IP_HASH_SALT;
+if (!IP_SALT) {
+	console.warn('IP_HASH_SALT not set. IP hashes will use a weak default. Set this in production.');
+}
+const SALT = IP_SALT || crypto.randomUUID();
 
 /** Accept an aggregate waste report from the CLI scanner and store it. */
 export const POST: RequestHandler = async ({ request }) => {
@@ -50,7 +54,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	const jobCount = data.job_count;
 	const rankingScore =
 		data.utilisation_score * Math.min(1, Math.log10(Math.max(jobCount, 1)) / 4);
-	const ipHash = createHash('sha256').update(ip + IP_SALT).digest('hex');
+	const ipHash = createHash('sha256').update(ip + SALT).digest('hex');
 	const showOnLeaderboard = data.show_on_leaderboard && jobCount >= 50;
 
 	try {

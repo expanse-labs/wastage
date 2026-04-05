@@ -8,11 +8,17 @@ let fontData: ArrayBuffer | null = null;
 /** Fetch and cache the IBM Plex Sans font for OG image rendering. */
 async function getFont(): Promise<ArrayBuffer> {
 	if (fontData) return fontData;
-	const res = await fetch(
-		'https://fonts.gstatic.com/s/ibmplexsans/v19/zYXgKVElMYYaJe8bpLHnCwDKhdHeFaxOedc.woff2'
-	);
-	fontData = await res.arrayBuffer();
-	return fontData;
+	try {
+		const res = await fetch(
+			'https://fonts.gstatic.com/s/ibmplexsans/v19/zYXgKVElMYYaJe8bpLHnCwDKhdHeFaxOedc.woff2'
+		);
+		if (!res.ok) throw new Error(`Font fetch failed: ${res.status}`);
+		fontData = await res.arrayBuffer();
+		return fontData;
+	} catch (err) {
+		console.error('Font fetch error:', err);
+		throw err;
+	}
 }
 
 /** Generate a dynamic OG image (1200x630 PNG) for a waste report. Cached for 24 hours. */

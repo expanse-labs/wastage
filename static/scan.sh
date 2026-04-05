@@ -517,45 +517,49 @@ if [ "$MODE" = "kubernetes" ]; then
         esac
     }
 
-    POD_DATA=$(echo "$POD_JSON" | awk '
-    BEGIN { RS="\n"; pod_idx=0 }
-    /"namespace"/ { gsub(/[",]/, ""); ns=$2 }
-    /"name"/ && !seen_name { gsub(/[",]/, ""); pod_name=$2; seen_name=1 }
-    /"cpu"/ && in_requests { gsub(/[",]/, ""); req_cpu=$2 }
-    /"memory"/ && in_requests { gsub(/[",]/, ""); req_mem=$2 }
-    /"requests"/ { in_requests=1 }
-    /"limits"/ { in_requests=0 }
-    /"nvidia.com\/gpu"/ { gsub(/[",]/, ""); gpu=$2 }
-    /}/ { if (in_requests) in_requests=0 }
-    END { }
-    ' 2>/dev/null) || true
+    # Get pod resource requests via jsonpath (reliable, unlike line-by-line JSON parsing)
+    POD_REQUESTS=$(kubectl get pods $NS_FLAG -o jsonpath='{range .items[?(@.status.phase=="Running")]}{.metadata.namespace}{"\t"}{.metadata.name}{"\t"}{.spec.containers[0].resources.requests.cpu}{"\t"}{.spec.containers[0].resources.requests.memory}{"\n"}{end}' 2>/dev/null)
 
     if [ "$HAS_METRICS" = "true" ] && [ -f "$TMPDIR_METRICS/pods-1.txt" ]; then
-        K8S_RESULT=$(cat "$TMPDIR_METRICS"/pods-*.txt | awk '
-        {
-            key = $1 "/" $2  # namespace/pod
+        # Average metrics across 3 samples, then join with resource requests
+        METRICS_AVG=$(cat "$TMPDIR_METRICS"/pods-*.txt | awk '{
+            key = $1 "/" $2
             cpu_str = $3
             if (index(cpu_str, "m") > 0) { gsub(/m/, "", cpu_str); cpu_m = cpu_str + 0 }
             else { cpu_m = (cpu_str + 0) * 1000 }
             mem_str = $4
             if (index(mem_str, "Gi") > 0) { gsub(/Gi/, "", mem_str); mem_mi = (mem_str + 0) * 1024 }
             else { gsub(/Mi/, "", mem_str); mem_mi = mem_str + 0 }
-
-            cpu_sum[key] += cpu_m
-            mem_sum[key] += mem_mi
-            count[key]++
-            ns[key] = $1
-            pod[key] = $2
+            cpu_sum[key] += cpu_m; mem_sum[key] += mem_mi; count[key]++
+            ns[key] = $1; pod[key] = $2
         }
         END {
-            for (k in cpu_sum) {
-                avg_cpu = cpu_sum[k] / count[k]
-                avg_mem = mem_sum[k] / count[k]
-                printf "%s\t%s\t%.0f\t%.0f\n", ns[k], pod[k], avg_cpu, avg_mem
-            }
+            for (k in cpu_sum) printf "%s\t%s\t%.0f\t%.0f\n", ns[k], pod[k], cpu_sum[k]/count[k], mem_sum[k]/count[k]
         }')
 
-        TOTAL_JOBS=$(echo "$K8S_RESULT" | wc -l | tr -d ' ')
+        # Build a lookup of requested resources (ns/pod → req_cpu_m, req_mem_mi)
+        declare -A REQ_CPU REQ_MEM
+        while IFS=$'\t' read -r rns rpod rcpu rmem; do
+            [ -z "$rns" ] && continue
+            # Parse CPU request to millicores
+            if echo "$rcpu" | grep -q "m$"; then
+                rcpu_m=$(echo "$rcpu" | sed 's/m$//')
+            else
+                rcpu_m=$((${rcpu:-0} * 1000))
+            fi
+            # Parse memory request to Mi
+            if echo "$rmem" | grep -q "Gi$"; then
+                rmem_mi=$(echo "$rmem" | sed 's/Gi$//' | awk '{printf "%.0f", $1 * 1024}')
+            elif echo "$rmem" | grep -q "Mi$"; then
+                rmem_mi=$(echo "$rmem" | sed 's/Mi$//')
+            else
+                rmem_mi=0
+            fi
+            REQ_CPU["$rns/$rpod"]=$rcpu_m
+            REQ_MEM["$rns/$rpod"]=$rmem_mi
+        done <<< "$POD_REQUESTS"
+
+        TOTAL_JOBS=$(echo "$METRICS_AVG" | grep -c . || echo 0)
 
         SUM_CPU_WASTE=0
         SUM_MEM_WASTE=0
@@ -566,8 +570,13 @@ if [ "$MODE" = "kubernetes" ]; then
 
             category=$(categorize_pod "$ns" "$pod_name" "")
 
-            req_cpu=$((actual_cpu * 2))
-            req_mem=$((actual_mem * 2))
+            key="$ns/$pod_name"
+            req_cpu=${REQ_CPU[$key]:-0}
+            req_mem=${REQ_MEM[$key]:-0}
+
+            # Fall back to 2x actual if no request data (pods without resource requests)
+            [ "$req_cpu" -eq 0 ] 2>/dev/null && req_cpu=$((actual_cpu * 2))
+            [ "$req_mem" -eq 0 ] 2>/dev/null && req_mem=$((actual_mem * 2))
 
             if [ "$req_cpu" -gt 0 ] 2>/dev/null; then
                 cpu_waste=$(echo "$actual_cpu $req_cpu" | awk '{w=(1-$1/$2)*100; if(w<0)w=0; if(w>100)w=100; printf "%.1f", w}')

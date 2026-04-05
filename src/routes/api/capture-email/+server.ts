@@ -2,9 +2,19 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import pool from '$lib/server/db.js';
 import { emailCaptureSchema } from '$lib/validation.js';
+import { checkRateLimit, extractIp } from '$lib/server/rate-limit.js';
 
 /** Store a lead's email address, linked to a specific waste report. */
 export const POST: RequestHandler = async ({ request }) => {
+	const ip = extractIp(request);
+	const { allowed, retryAfter } = checkRateLimit(ip);
+	if (!allowed) {
+		return json(
+			{ error: 'Rate limit exceeded. Try again later.' },
+			{ status: 429, headers: { 'Retry-After': String(retryAfter) } }
+		);
+	}
+
 	let body: unknown;
 	try {
 		body = await request.json();

@@ -87,9 +87,11 @@ export function validateHistogram(
 		weightedSum += midpoint * count;
 	}
 
-	if (totalJobs !== jobCount) return false;
+	if (totalJobs === 0) return true;
 
-	const histogramAvg = totalJobs > 0 ? weightedSum / totalJobs : 0;
+	// Histogram may only contain tracked jobs (a subset of total job_count),
+	// so we don't compare totalJobs against jobCount.
+	const histogramAvg = weightedSum / totalJobs;
 	if (Math.abs(histogramAvg - reportedAvg) > 5) return false;
 
 	for (const [, count] of buckets) {
