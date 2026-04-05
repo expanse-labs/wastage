@@ -39,7 +39,10 @@ export const GET: RequestHandler = async ({ params }) => {
 	}
 
 	const r = result.rows[0];
-	const scoreColor = r.utilisation_score >= 70 ? '#059669' : r.utilisation_score >= 40 ? '#D97706' : '#DC2626';
+	const score = r.utilisation_score ?? 0;
+	const cost = r.total_estimated_cost_usd ?? 0;
+	const cpuWaste = r.avg_cpu_waste_pct ?? 0;
+	const scoreColor = score >= 70 ? '#059669' : score >= 40 ? '#D97706' : '#DC2626';
 	const font = await getFont();
 
 	const svg = await satori(
@@ -74,7 +77,7 @@ export const GET: RequestHandler = async ({ params }) => {
 								color: scoreColor,
 								marginBottom: '8px'
 							},
-							children: `${r.utilisation_score.toFixed(0)}/100`
+							children: `${score.toFixed(0)}/100`
 						}
 					},
 					{
@@ -104,13 +107,13 @@ export const GET: RequestHandler = async ({ params }) => {
 									type: 'div',
 									props: {
 										style: { color: '#DC2626' },
-										children: `$${r.total_estimated_cost_usd.toLocaleString(undefined, { maximumFractionDigits: 0 })} wasted`
+										children: `$${cost.toLocaleString(undefined, { maximumFractionDigits: 0 })} wasted`
 									}
 								},
 								{
 									type: 'div',
 									props: {
-										children: `${r.avg_cpu_waste_pct.toFixed(0)}% CPU waste`
+										children: `${cpuWaste.toFixed(0)}% CPU waste`
 									}
 								}
 							]
