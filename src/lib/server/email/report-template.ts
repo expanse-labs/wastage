@@ -1,8 +1,9 @@
 /**
  * HTML email template for waste report delivery.
  *
- * Matches the Expanse design system: dark background (#09090b),
- * gold accent (#C9A96E), off-white text (#fafafa).
+ * Uses the Expanse light theme to match wastage.expanse.sh:
+ * Surface #FAF9F5, Foreground #141413, Card #FFFFFF, Muted #73726D,
+ * Elevated #E8E6DD, IBM Plex Sans, JetBrains Mono.
  */
 
 import type { Report } from '$lib/types.js';
@@ -11,12 +12,6 @@ function scoreColour(score: number): string {
 	if (score >= 70) return '#059669';
 	if (score >= 40) return '#D97706';
 	return '#DC2626';
-}
-
-function formatNumber(n: number): string {
-	if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-	if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-	return n.toLocaleString();
 }
 
 function formatCurrency(n: number): string {
@@ -46,58 +41,59 @@ export function renderReportEmail(report: Report, reportUrl: string): { html: st
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
-<body style="margin:0; padding:0; background-color:#09090b; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#09090b; padding:40px 20px;">
+<body style="margin:0; padding:0; background-color:#FAF9F5; font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#FAF9F5; padding:40px 20px;">
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;">
 
           <!-- Header -->
           <tr>
-            <td style="padding:32px 40px; border-bottom:1px solid #27272a;">
-              <img src="https://app.expanse.sh/email-signature.png" alt="Expanse" width="120" style="display:block;" />
+            <td style="padding:24px 40px; border-bottom:1px solid #E8E6DD;">
+              <span style="font-family:'IBM Plex Sans',sans-serif; font-size:14px; font-weight:700; color:#141413; letter-spacing:-0.3px;">wastage.expanse.sh</span>
+              <span style="float:right; font-size:11px; color:#9C9B96; background:#E8E6DD; padding:4px 10px; border-radius:12px;">YC P26</span>
             </td>
           </tr>
 
           <!-- Score hero -->
           <tr>
-            <td style="padding:40px; text-align:center;">
-              <p style="margin:0 0 8px; font-size:14px; color:#a1a1aa; text-transform:uppercase; letter-spacing:1px;">
+            <td style="padding:40px; text-align:center; background-color:#FFFFFF;">
+              <p style="margin:0 0 8px; font-size:13px; color:#73726D; text-transform:uppercase; letter-spacing:1px;">
                 Utilisation Score
               </p>
-              <p style="margin:0 0 16px; font-size:64px; font-weight:700; color:${colour};">
+              <p style="margin:0 0 16px; font-size:64px; font-weight:700; color:${colour}; font-family:'JetBrains Mono','IBM Plex Sans',monospace;">
                 ${score.toFixed(0)}/100
               </p>
-              <p style="margin:0; font-size:14px; color:#a1a1aa;">
-                ${report.cluster_name || 'Anonymous cluster'} · ${scheduler} · ${report.job_count.toLocaleString()} ${jobLabel} analysed
+              <p style="margin:0; font-size:14px; color:#73726D;">
+                ${report.cluster_name || 'Anonymous cluster'} ·
+                <span style="display:inline-block; padding:2px 8px; font-size:11px; font-weight:500; border-radius:10px; background:${report.scheduler_type === 'slurm' ? '#DBEAFE' : '#EDE9FE'}; color:${report.scheduler_type === 'slurm' ? '#1E40AF' : '#6D28D9'};">${scheduler}</span>
+                · ${report.job_count.toLocaleString()} ${jobLabel} analysed
               </p>
             </td>
           </tr>
 
           <!-- Stats row -->
           <tr>
-            <td style="padding:0 40px 32px;">
-              <table width="100%" cellpadding="0" cellspacing="0">
+            <td style="padding:24px 40px;">
+              <table width="100%" cellpadding="0" cellspacing="8">
                 <tr>
-                  <td width="33%" style="text-align:center; padding:20px; background-color:#18181b; border-radius:8px;">
+                  <td width="33%" style="text-align:center; padding:20px 12px; background-color:#FFFFFF; border:1px solid #E8E6DD; border-radius:12px;">
                     <p style="margin:0 0 4px; font-size:24px; font-weight:700; color:#DC2626; font-family:'JetBrains Mono',monospace;">
                       ${formatCurrency(cost)}
                     </p>
-                    <p style="margin:0; font-size:12px; color:#a1a1aa;">estimated waste</p>
+                    <p style="margin:0; font-size:12px; color:#73726D;">estimated waste</p>
                   </td>
-                  <td width="4"></td>
-                  <td width="33%" style="text-align:center; padding:20px; background-color:#18181b; border-radius:8px;">
-                    <p style="margin:0 0 4px; font-size:24px; font-weight:700; color:#fafafa; font-family:'JetBrains Mono',monospace;">
+                  <td width="33%" style="text-align:center; padding:20px 12px; background-color:#FFFFFF; border:1px solid #E8E6DD; border-radius:12px;">
+                    <p style="margin:0 0 4px; font-size:24px; font-weight:700; color:#141413; font-family:'JetBrains Mono',monospace;">
                       ${cpuWaste.toFixed(0)}%
                     </p>
-                    <p style="margin:0; font-size:12px; color:#a1a1aa;">CPU waste</p>
+                    <p style="margin:0; font-size:12px; color:#73726D;">CPU waste</p>
                   </td>
-                  <td width="4"></td>
-                  <td width="33%" style="text-align:center; padding:20px; background-color:#18181b; border-radius:8px;">
-                    <p style="margin:0 0 4px; font-size:24px; font-weight:700; color:#fafafa; font-family:'JetBrains Mono',monospace;">
+                  <td width="33%" style="text-align:center; padding:20px 12px; background-color:#FFFFFF; border:1px solid #E8E6DD; border-radius:12px;">
+                    <p style="margin:0 0 4px; font-size:24px; font-weight:700; color:#141413; font-family:'JetBrains Mono',monospace;">
                       ${memWaste.toFixed(0)}%
                     </p>
-                    <p style="margin:0; font-size:12px; color:#a1a1aa;">memory waste</p>
+                    <p style="margin:0; font-size:12px; color:#73726D;">memory waste</p>
                   </td>
                 </tr>
               </table>
@@ -108,11 +104,11 @@ export function renderReportEmail(report: Report, reportUrl: string): { html: st
           <!-- Failed jobs -->
           <tr>
             <td style="padding:0 40px 24px;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#27272a; border-radius:8px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#FEF2F2; border:1px solid #FECACA; border-radius:8px;">
                 <tr>
-                  <td style="padding:16px 20px;">
-                    <p style="margin:0; font-size:14px; color:#fafafa;">
-                      <strong style="color:#DC2626;">${report.failed_job_pct?.toFixed(0)}% of ${jobLabel} failed</strong>
+                  <td style="padding:14px 20px;">
+                    <p style="margin:0; font-size:14px; color:#991B1B;">
+                      <strong>${report.failed_job_pct?.toFixed(0)}% of ${jobLabel} failed</strong>
                       — ${report.failed_jobs.toLocaleString()} ${jobLabel}, consuming ${report.failed_core_pct?.toFixed(0)}% of total compute.
                     </p>
                   </td>
@@ -125,7 +121,7 @@ export function renderReportEmail(report: Report, reportUrl: string): { html: st
           <!-- CTA button -->
           <tr>
             <td style="padding:0 40px 32px; text-align:center;">
-              <a href="${reportUrl}" style="display:inline-block; padding:14px 32px; background-color:#C9A96E; color:#09090b; font-size:14px; font-weight:600; text-decoration:none; border-radius:6px;">
+              <a href="${reportUrl}" style="display:inline-block; padding:14px 32px; background-color:#141413; color:#FAF9F5; font-size:14px; font-weight:600; text-decoration:none; border-radius:8px;">
                 View Full Report →
               </a>
             </td>
@@ -134,17 +130,17 @@ export function renderReportEmail(report: Report, reportUrl: string): { html: st
           <!-- Expanse CTA -->
           <tr>
             <td style="padding:0 40px 32px;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#18181b; border-radius:8px; border:1px solid #27272a;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#E8E6DD; border-radius:12px;">
                 <tr>
                   <td style="padding:24px;">
-                    <p style="margin:0 0 12px; font-size:16px; font-weight:600; color:#fafafa;">
+                    <p style="margin:0 0 10px; font-size:16px; font-weight:600; color:#141413;">
                       This is ~10% of what Expanse shows you.
                     </p>
-                    <p style="margin:0 0 16px; font-size:14px; color:#a1a1aa; line-height:1.6;">
+                    <p style="margin:0 0 16px; font-size:14px; color:#73726D; line-height:1.6;">
                       Install Expanse on your cluster (free) for live CPU, memory, and GPU utilisation per job,
                       per-user waste breakdown, and API access for your own dashboards.
                     </p>
-                    <a href="https://app.expanse.sh" style="display:inline-block; padding:10px 24px; background-color:#fafafa; color:#09090b; font-size:13px; font-weight:600; text-decoration:none; border-radius:6px;">
+                    <a href="https://app.expanse.sh" style="display:inline-block; padding:10px 24px; background-color:#141413; color:#FAF9F5; font-size:13px; font-weight:600; text-decoration:none; border-radius:6px;">
                       Get Started Free →
                     </a>
                   </td>
@@ -155,12 +151,12 @@ export function renderReportEmail(report: Report, reportUrl: string): { html: st
 
           <!-- Footer -->
           <tr>
-            <td style="padding:24px 40px; border-top:1px solid #27272a;">
-              <p style="margin:0 0 8px; font-size:12px; color:#71717a;">
+            <td style="padding:24px 40px; border-top:1px solid #E8E6DD;">
+              <p style="margin:0 0 6px; font-size:12px; color:#9C9B96;">
                 Focus on research, not resources.
               </p>
-              <p style="margin:0; font-size:11px; color:#71717a;">
-                Expanse Compute Inc. · YC P26 · <a href="https://expanse.sh" style="color:#C9A96E; text-decoration:none;">expanse.sh</a>
+              <p style="margin:0; font-size:11px; color:#9C9B96;">
+                Expanse Compute Inc. · YC P26 · <a href="https://expanse.sh" style="color:#141413; text-decoration:none;">expanse.sh</a>
               </p>
             </td>
           </tr>
