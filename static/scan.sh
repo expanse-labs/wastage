@@ -712,7 +712,7 @@ if [ "$MODE" = "kubernetes" ]; then
 
     TOTAL_CORE_HOURS=0
     WASTED_CORE_HOURS=$(echo "$TOTAL_COST $COST_PER_CORE_HOUR" | awk '{printf "%.2f", ($2>0)?$1/$2:0}')
-    MEM_RELIABLE=true
+    MEM_RELIABLE=$HAS_METRICS
     FAILED_JOBS=0
     FAIL_PCT=0
     FAIL_CORE_PCT=0
