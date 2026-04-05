@@ -1,0 +1,9 @@
+node_modules/
+build/
+.svelte-kit/
+.gstack/
+.context/
+.env*
+*.log
+.DS_Store
+

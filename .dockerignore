@@ -1,0 +1,10 @@
+node_modules
+.git
+.gstack
+.context
+tests
+*.md
+!README.md
+.svelte-kit
+build
+.env*
