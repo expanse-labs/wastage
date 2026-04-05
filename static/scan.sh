@@ -943,7 +943,7 @@ RESPONSE=$(http_post "$API_URL" "$PAYLOAD" 2>/dev/null) || {
     exit 0
 }
 
-REPORT_URL=$(echo "$RESPONSE" | awk -F'"' '/"url"/{print $4}')
+REPORT_URL=$(echo "$RESPONSE" | awk -F'"' '{for(i=1;i<=NF;i++){if($i=="url")print $(i+2)}}')
 if [ -n "$REPORT_URL" ]; then
     echo ""
     echo -e "  ${BOLD}View full report:${NC} ${BLUE}${REPORT_URL}${NC}"
