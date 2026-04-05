@@ -32,6 +32,11 @@ spec:
                   key: wastage-database-url
             - name: DATABASE_SSL
               value: "true"
+            - name: IP_HASH_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: wastage-ip-hash-salt
             - name: NODE_ENV
               value: production
             - name: PORT
