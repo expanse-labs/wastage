@@ -7,6 +7,11 @@
 
 set -uo pipefail
 
+# ── Cleanup on exit ───────────────────────────────────────
+CLEANUP_FILES=""
+cleanup() { [ -n "$CLEANUP_FILES" ] && rm -rf $CLEANUP_FILES 2>/dev/null; }
+trap cleanup EXIT
+
 # ── Config ──────────────────────────────────────────────
 API_URL="https://wastage.expanse.sh/api/ingest"
 DAYS=30
@@ -140,6 +145,7 @@ if [ "$MODE" = "slurm" ]; then
     [ -n "$user_cost" ] && COST_PER_CORE_HOUR="$user_cost"
 
     SACCT_TMP=$(mktemp)
+    CLEANUP_FILES="$CLEANUP_FILES $SACCT_TMP"
     ACTUAL_DAYS=$DAYS
     MAX_SACCT_WAIT=120
     CLUSTER_WIDE=true
@@ -197,6 +203,7 @@ if [ "$MODE" = "slurm" ]; then
     export TOTAL_LINES
     SACCT_SIZE=$(wc -c < "$SACCT_TMP" | tr -d ' ')
     AWK_OUT=$(mktemp)
+    CLEANUP_FILES="$CLEANUP_FILES $AWK_OUT"
     info "Found $TOTAL_LINES records. Analysing..."
 
     # Single-pass awk over all records.
@@ -427,6 +434,7 @@ if [ "$MODE" = "kubernetes" ]; then
     POD_JSON=$(kubectl get pods $NS_FLAG -o json 2>/dev/null) || die "Failed to get pods"
 
     TMPDIR_METRICS=$(mktemp -d)
+    CLEANUP_FILES="$CLEANUP_FILES $TMPDIR_METRICS"
     if [ "$HAS_METRICS" = "true" ]; then
         for i in 1 2 3; do
             info "  [$i/3] Collecting metrics..."
