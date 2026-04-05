@@ -11,7 +11,16 @@ export const GET: RequestHandler = async ({ params }) => {
 	}
 
 	try {
-		const result = await pool.query('SELECT * FROM reports WHERE id = $1', [id]);
+		const result = await pool.query(
+			`SELECT id, created_at, scheduler_type, job_count, node_count,
+				avg_cpu_waste_pct, avg_mem_waste_pct, avg_gpu_core_waste_pct, avg_gpu_mem_waste_pct,
+				gpu_jobs, gpu_hours, total_estimated_cost_usd, utilisation_score, ranking_score,
+				cluster_name, country, show_on_leaderboard, histogram_cpu, histogram_mem,
+				cost_per_core_hour, categories, total_core_hours, wasted_core_hours,
+				failed_jobs, failed_job_pct, failed_core_pct
+			FROM reports WHERE id = $1`,
+			[id]
+		);
 
 		if (result.rows.length === 0) {
 			return json({ error: 'Report not found' }, { status: 404 });
