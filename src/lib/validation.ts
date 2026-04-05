@@ -91,9 +91,10 @@ export function validateHistogram(
 
 	if (totalCoreHours === 0) return true;
 
-	// Both histogram and reportedAvg are core-hour weighted, so they should
-	// agree within a small tolerance. The 5% accounts for bucket midpoint
-	// approximation (a job at 11% waste goes in the 10-20 bucket with midpoint 15).
+	// SLURM: both histogram and reportedAvg are core-hour weighted.
+	// K8s: both are pod-count weighted. Either way, the weighting matches.
+	// The 5% tolerance accounts for bucket midpoint approximation
+	// (e.g. a job at 11% waste lands in the 10-20 bucket with midpoint 15).
 	const histogramAvg = weightedSum / totalCoreHours;
 	if (Math.abs(histogramAvg - reportedAvg) > 5) return false;
 

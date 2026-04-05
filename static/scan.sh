@@ -9,6 +9,7 @@ set -uo pipefail
 
 # ── Cleanup on exit ───────────────────────────────────────
 CLEANUP_FILES=""
+# shellcheck disable=SC2086 — intentional word splitting on space-separated temp paths
 cleanup() { [ -n "$CLEANUP_FILES" ] && rm -rf $CLEANUP_FILES 2>/dev/null; }
 trap cleanup EXIT
 
