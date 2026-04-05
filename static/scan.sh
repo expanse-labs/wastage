@@ -517,8 +517,26 @@ if [ "$MODE" = "kubernetes" ]; then
         esac
     }
 
-    # Get pod resource requests via jsonpath (reliable, unlike line-by-line JSON parsing)
-    POD_REQUESTS=$(kubectl get pods $NS_FLAG -o jsonpath='{range .items[?(@.status.phase=="Running")]}{.metadata.namespace}{"\t"}{.metadata.name}{"\t"}{.spec.containers[0].resources.requests.cpu}{"\t"}{.spec.containers[0].resources.requests.memory}{"\n"}{end}' 2>/dev/null)
+    # Sum resource requests across ALL containers per pod (including sidecars).
+    # Uses containers[*] wildcard to get all containers, then sums in awk.
+    POD_REQUESTS=$(kubectl get pods $NS_FLAG -o jsonpath='{range .items[?(@.status.phase=="Running")]}{.metadata.namespace}{"\t"}{.metadata.name}{"\t"}{.spec.containers[*].resources.requests.cpu}{"\t"}{.spec.containers[*].resources.requests.memory}{"\n"}{end}' 2>/dev/null | awk -F'\t' '{
+        # $3 may contain space-separated CPU values from multiple containers (e.g. "500m 100m")
+        # $4 may contain space-separated memory values (e.g. "512Mi 64Mi")
+        total_cpu = 0; total_mem = 0
+        n = split($3, cpus, " ")
+        for (i = 1; i <= n; i++) {
+            v = cpus[i]
+            if (index(v, "m") > 0) { gsub(/m/, "", v); total_cpu += v }
+            else { total_cpu += v * 1000 }
+        }
+        m = split($4, mems, " ")
+        for (i = 1; i <= m; i++) {
+            v = mems[i]
+            if (index(v, "Gi") > 0) { gsub(/Gi/, "", v); total_mem += v * 1024 }
+            else { gsub(/Mi/, "", v); total_mem += v }
+        }
+        printf "%s\t%s\t%dm\t%dMi\n", $1, $2, total_cpu, total_mem
+    }')
 
     declare -A CAT_PODS CAT_CPU CAT_MEM CAT_COST
     METRICS_AVG=""

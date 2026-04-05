@@ -107,8 +107,37 @@ export const POST: RequestHandler = async ({ request }) => {
 			);
 
 			// Send report email asynchronously (don't block the response)
-			const report = { id, ...data, ranking_score: rankingScore } as any;
-			sendReportEmail(report, data.email).catch(() => {});
+			sendReportEmail(
+				{
+					id,
+					created_at: new Date().toISOString(),
+					scheduler_type: data.scheduler_type,
+					job_count: data.job_count,
+					node_count: data.node_count ?? 0,
+					avg_cpu_waste_pct: data.avg_cpu_waste_pct,
+					avg_mem_waste_pct: data.avg_mem_waste_pct,
+					avg_gpu_core_waste_pct: data.avg_gpu_core_waste_pct ?? null,
+					avg_gpu_mem_waste_pct: data.avg_gpu_mem_waste_pct ?? null,
+					gpu_jobs: data.gpu_jobs ?? 0,
+					gpu_hours: data.gpu_hours ?? 0,
+					total_estimated_cost_usd: data.total_estimated_cost_usd,
+					utilisation_score: data.utilisation_score,
+					ranking_score: rankingScore,
+					cluster_name: data.cluster_name ?? null,
+					country: data.country ?? null,
+					show_on_leaderboard: showOnLeaderboard,
+					histogram_cpu: data.histogram_cpu ?? null,
+					histogram_mem: data.histogram_mem ?? null,
+					cost_per_core_hour: data.cost_per_core_hour ?? 0.10,
+					categories: data.categories ?? null,
+					total_core_hours: data.total_core_hours ?? 0,
+					wasted_core_hours: data.wasted_core_hours ?? 0,
+					failed_jobs: data.failed_jobs ?? 0,
+					failed_job_pct: data.failed_job_pct ?? 0,
+					failed_core_pct: data.failed_core_pct ?? 0
+				},
+				data.email
+			).catch(() => {});
 		}
 
 		return json({ id, url: `https://wastage.expanse.sh/r/${id}` });
