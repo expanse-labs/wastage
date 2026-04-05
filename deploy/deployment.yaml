@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wastage
+  namespace: expanse-app
+  labels:
+    app: wastage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wastage
+  template:
+    metadata:
+      labels:
+        app: wastage
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: arm64
+      imagePullSecrets:
+        - name: depot-registry
+      containers:
+        - name: wastage
+          image: registry.depot.dev/3n91qj7pfk:wastage-latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: wastage-database-url
+            - name: DATABASE_SSL
+              value: "true"
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 30
