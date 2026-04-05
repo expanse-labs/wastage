@@ -90,8 +90,11 @@ export function validateHistogram(
 
 	// Histogram may only contain tracked jobs (a subset of total job_count),
 	// so we don't compare totalJobs against jobCount.
+	// Histogram uses bucket midpoints (unweighted per-job), while reportedAvg is
+	// core-hour weighted. Natural divergence of 15-20% is common on clusters where
+	// large jobs have different waste profiles than small jobs.
 	const histogramAvg = weightedSum / totalJobs;
-	if (Math.abs(histogramAvg - reportedAvg) > 5) return false;
+	if (Math.abs(histogramAvg - reportedAvg) > 20) return false;
 
 	// Only flag suspicious uniformity when there are enough buckets to expect spread.
 	// Small K8s clusters with uniform workloads legitimately concentrate in one bucket.
