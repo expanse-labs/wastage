@@ -7,7 +7,7 @@
 
 import { z } from 'zod';
 
-const histogramSchema = z.record(z.string(), z.number().int().min(0));
+const histogramSchema = z.record(z.string(), z.number().min(0));
 
 const categorySchema = z.record(
 	z.string(),
@@ -59,9 +59,11 @@ export const emailCaptureSchema = z.object({
 });
 
 /**
- * Verify that a waste histogram is consistent with the reported average.
- * Catches fabricated reports where someone sends a fake average without
- * constructing a matching distribution.
+ * Verify that a core-hour weighted waste histogram is consistent with
+ * the reported average. Both use the same weighting (core-hours), so
+ * the histogram's weighted average should closely match reportedAvg.
+ *
+ * Bucket values represent core-hours in each waste range, not job counts.
  */
 export function validateHistogram(
 	histogram: Record<string, number> | undefined,
@@ -72,32 +74,34 @@ export function validateHistogram(
 	const buckets = Object.entries(histogram);
 	if (buckets.length === 0) return true;
 
-	let totalJobs = 0;
+	let totalCoreHours = 0;
 	let weightedSum = 0;
 
-	for (const [range, count] of buckets) {
-		totalJobs += count;
+	for (const [range, coreHours] of buckets) {
+		if (coreHours < 0) return false;
+		totalCoreHours += coreHours;
 		const parts = range.split('-');
 		if (parts.length !== 2) return false;
 		const low = parseFloat(parts[0]);
 		const high = parseFloat(parts[1]);
 		if (isNaN(low) || isNaN(high)) return false;
 		const midpoint = (low + high) / 2;
-		weightedSum += midpoint * count;
+		weightedSum += midpoint * coreHours;
 	}
 
-	if (totalJobs === 0) return true;
+	if (totalCoreHours === 0) return true;
 
-	// Histogram may only contain tracked jobs (a subset of total job_count),
-	// so we don't compare totalJobs against jobCount.
-	const histogramAvg = weightedSum / totalJobs;
+	// SLURM: both histogram and reportedAvg are core-hour weighted.
+	// K8s: both are pod-count weighted. Either way, the weighting matches.
+	// The 5% tolerance accounts for bucket midpoint approximation
+	// (e.g. a job at 11% waste lands in the 10-20 bucket with midpoint 15).
+	const histogramAvg = weightedSum / totalCoreHours;
 	if (Math.abs(histogramAvg - reportedAvg) > 5) return false;
 
-	// Only flag suspicious uniformity when there are enough buckets to expect spread.
-	// Small K8s clusters with uniform workloads legitimately concentrate in one bucket.
+	// Flag suspicious uniformity (>95% of core-hours in one bucket)
 	if (buckets.length >= 3) {
-		for (const [, count] of buckets) {
-			if (count / totalJobs > 0.95) return false;
+		for (const [, coreHours] of buckets) {
+			if (coreHours / totalCoreHours > 0.95) return false;
 		}
 	}
 

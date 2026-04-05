@@ -55,7 +55,10 @@
 			>
 				GitHub
 			</a>
-			<span class="rounded-full bg-elevated px-2.5 py-1 text-xs font-medium text-muted">YC P26</span>
+			<span class="inline-flex items-center gap-1.5 rounded-full border border-[#F26522]/20 bg-[#FFF6F0] px-2.5 py-1 text-xs font-semibold text-[#F26522]">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="#F26522"><path d="M0 0h24v24H0V0zm12.7 13.3L17 6h-2.3l-2.7 5-2.7-5H7l4.3 7.3V18h1.4v-4.7z"/></svg>
+					P26
+				</span>
 		</div>
 	</nav>
 
@@ -222,7 +225,10 @@
 			<p class="text-sm text-muted">
 				Powered by <a href="https://expanse.sh" class="text-foreground underline hover:no-underline">Expanse</a>
 			</p>
-			<span class="rounded-full bg-elevated px-2.5 py-1 text-xs font-medium text-muted">YC P26</span>
+			<span class="inline-flex items-center gap-1.5 rounded-full border border-[#F26522]/20 bg-[#FFF6F0] px-2.5 py-1 text-xs font-semibold text-[#F26522]">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="#F26522"><path d="M0 0h24v24H0V0zm12.7 13.3L17 6h-2.3l-2.7 5-2.7-5H7l4.3 7.3V18h1.4v-4.7z"/></svg>
+					P26
+				</span>
 		</div>
 	</footer>
 </div>

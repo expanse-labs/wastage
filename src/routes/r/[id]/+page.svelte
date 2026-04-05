@@ -228,6 +228,36 @@
 			</div>
 		</div>
 
+		<!-- Waste distribution histogram -->
+		{#if r.histogram_cpu && Object.keys(r.histogram_cpu).length > 0}
+			{@const buckets = ['0-10', '10-20', '20-30', '30-40', '40-50', '50-60', '60-70', '70-80', '80-90', '90-100']}
+			{@const maxVal = Math.max(...buckets.map(b => r.histogram_cpu?.[b] ?? 0))}
+			<div class="mt-8 rounded-xl border border-subtle-border bg-card p-6">
+				<h2 class="text-lg font-semibold text-foreground">Waste Distribution</h2>
+				<p class="mt-1 text-xs text-muted">Core-hours by CPU waste percentage</p>
+				<div class="mt-4 flex items-end gap-1" style="height: 120px;">
+					{#each buckets as bucket}
+						{@const val = r.histogram_cpu?.[bucket] ?? 0}
+						{@const height = maxVal > 0 ? (val / maxVal) * 100 : 0}
+						{@const pct = parseInt(bucket.split('-')[0])}
+						<div class="group relative flex-1 flex flex-col items-center justify-end h-full">
+							<div
+								class="w-full rounded-t {pct >= 50 ? 'bg-danger' : pct >= 30 ? 'bg-warning' : 'bg-success'}"
+								style="height: {Math.max(height, 2)}%;"
+							></div>
+							<span class="mt-1 text-[10px] text-faint">{bucket.split('-')[0]}</span>
+							{#if val > 0}
+								<div class="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:block rounded bg-foreground px-2 py-1 text-xs text-surface whitespace-nowrap">
+									{formatNumber(val)} core-hrs
+								</div>
+							{/if}
+						</div>
+					{/each}
+				</div>
+				<p class="mt-1 text-right text-[10px] text-faint">CPU waste %</p>
+			</div>
+		{/if}
+
 		<!-- K8s categories -->
 		{#if r.categories && Object.keys(r.categories).length > 0}
 			<div class="mt-8 rounded-xl border border-subtle-border bg-card p-6">
@@ -336,7 +366,10 @@
 			<p class="text-sm text-muted">
 				Powered by <a href="https://expanse.sh" class="text-foreground underline hover:no-underline">Expanse</a>
 			</p>
-			<span class="rounded-full bg-elevated px-2.5 py-1 text-xs font-medium text-muted">YC P26</span>
+			<span class="inline-flex items-center gap-1.5 rounded-full border border-[#F26522]/20 bg-[#FFF6F0] px-2.5 py-1 text-xs font-semibold text-[#F26522]">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="#F26522"><path d="M0 0h24v24H0V0zm12.7 13.3L17 6h-2.3l-2.7 5-2.7-5H7l4.3 7.3V18h1.4v-4.7z"/></svg>
+					P26
+				</span>
 		</div>
 	</footer>
 </div>
