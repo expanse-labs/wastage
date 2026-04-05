@@ -36,7 +36,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		await pool.query(
-			'INSERT INTO email_captures (report_id, email) VALUES ($1, $2)',
+			'INSERT INTO email_captures (report_id, email) VALUES ($1, $2) ON CONFLICT DO NOTHING',
 			[report_id, email]
 		);
 

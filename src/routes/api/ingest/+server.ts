@@ -101,7 +101,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		if (data.email) {
 			await pool.query(
-				'INSERT INTO email_captures (report_id, email) VALUES ($1, $2)',
+				'INSERT INTO email_captures (report_id, email) VALUES ($1, $2) ON CONFLICT DO NOTHING',
 				[id, data.email]
 			);
 		}

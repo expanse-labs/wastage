@@ -37,7 +37,8 @@ export async function migrate() {
 			id SERIAL PRIMARY KEY,
 			report_id TEXT REFERENCES reports(id),
 			email TEXT NOT NULL,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE (report_id, email)
 		);
 
 		CREATE INDEX IF NOT EXISTS idx_reports_leaderboard
