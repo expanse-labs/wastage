@@ -281,7 +281,7 @@ if [ "$MODE" = "slurm" ]; then
             cw = (1 - used/alloc) * 100
             if (cw < 0) cw = 0; if (cw > 100) cw = 100
             track_n++; track_ch += ch; track_w += cw * ch
-            printf "JOB_WASTE %.1f\n", cw
+            printf "JOB_WASTE %.1f %.2f\n", cw, ch
         }
 
         # GPU detection from AllocTRES (POSIX-compatible, no gawk extensions)
@@ -397,10 +397,12 @@ if [ "$MODE" = "slurm" ]; then
         lj=($2>1)?log($2)/log(10):0; printf "%.2f",$1*(lj/4<1?lj/4:1)
     }')
 
+    # Build core-hour weighted histogram (float accumulation via awk)
     while IFS= read -r line; do
         cpu_w=$(echo "$line" | awk '{print $2}')
+        ch_val=$(echo "$line" | awk '{print $3}')
         b=$(bucket_for "$cpu_w")
-        HIST_CPU[$b]=$(( ${HIST_CPU[$b]} + 1 ))
+        HIST_CPU[$b]=$(echo "${HIST_CPU[$b]} $ch_val" | awk '{printf "%.2f", $1 + $2}')
     done <<< "$(echo "$RESULT" | grep "^JOB_WASTE")"
 fi
 
