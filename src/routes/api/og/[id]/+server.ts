@@ -29,10 +29,16 @@ export const GET: RequestHandler = async ({ params }) => {
 		return new Response('Not found', { status: 404 });
 	}
 
-	const result = await pool.query(
-		'SELECT utilisation_score, total_estimated_cost_usd, job_count, scheduler_type, avg_cpu_waste_pct, avg_mem_waste_pct FROM reports WHERE id = $1',
-		[id]
-	);
+	let result;
+	try {
+		result = await pool.query(
+			'SELECT utilisation_score, total_estimated_cost_usd, job_count, scheduler_type, avg_cpu_waste_pct, avg_mem_waste_pct FROM reports WHERE id = $1',
+			[id]
+		);
+	} catch (err) {
+		console.error('OG image DB error:', err);
+		return new Response('Internal server error', { status: 500 });
+	}
 
 	if (result.rows.length === 0) {
 		return new Response('Not found', { status: 404 });
