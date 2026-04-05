@@ -1,0 +1,53 @@
+name: Deploy Wastage
+# Auto-triggers on push to main when source or Dockerfile change
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/**
+      - static/**
+      - Dockerfile
+      - package.json
+      - bun.lock
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  DEPOT_REGISTRY: registry.depot.dev/${{ vars.DEPOT_PROJECT_ID }}
+
+jobs:
+  deploy:
+    name: Deploy Wastage
+    runs-on: depot-ubuntu-24.04-4
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    concurrency:
+      group: deploy-wastage
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Build and save to registry
+        run: |
+          TAG="${GITHUB_SHA::7}"
+          depot build --project ${{ vars.DEPOT_PROJECT_ID }} \
+            --platform linux/arm64 \
+            --save \
+            --save-tag wastage-${TAG} \
+            --save-tag wastage-latest \
+            .
+      - name: Update K8s manifest
+        run: |
+          TAG="${GITHUB_SHA::7}"
+          git config user.name "depot-ci"
+          git config user.email "ci@expanse.sh"
+          git pull origin main --rebase
+          sed -i "s|image: registry.depot.dev/.*:wastage.*|image: ${{ env.DEPOT_REGISTRY }}:wastage-${TAG}|" \
+            deploy/k8s/deployment.yaml
+          git add deploy/k8s/deployment.yaml
+          git diff --cached --quiet || git commit -m "chore(deploy): update wastage image to ${TAG} [skip ci]"
+          git push origin main || true
