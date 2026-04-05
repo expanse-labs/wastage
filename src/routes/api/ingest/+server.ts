@@ -4,6 +4,7 @@ import pool from '$lib/server/db.js';
 import { generateReportId } from '$lib/server/id.js';
 import { checkRateLimit, extractIp } from '$lib/server/rate-limit.js';
 import { ingestSchema, validateHistogram } from '$lib/validation.js';
+import { sendReportEmail } from '$lib/server/email/send-report.js';
 import { createHash } from 'crypto';
 import { env } from '$env/dynamic/private';
 
@@ -104,6 +105,10 @@ export const POST: RequestHandler = async ({ request }) => {
 				'INSERT INTO email_captures (report_id, email) VALUES ($1, $2) ON CONFLICT DO NOTHING',
 				[id, data.email]
 			);
+
+			// Send report email asynchronously (don't block the response)
+			const report = { id, ...data, ranking_score: rankingScore } as any;
+			sendReportEmail(report, data.email).catch(() => {});
 		}
 
 		return json({ id, url: `https://wastage.expanse.sh/r/${id}` });

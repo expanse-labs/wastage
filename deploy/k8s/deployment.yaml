@@ -6,7 +6,12 @@ metadata:
   labels:
     app: wastage
 spec:
-  replicas: 1
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: wastage
@@ -37,16 +42,30 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: wastage-ip-hash-salt
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: aws-access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: aws-secret-access-key
+            - name: AWS_REGION
+              value: eu-west-2
+            - name: EMAIL_FROM
+              value: "reports@getexpanse.io"
             - name: NODE_ENV
               value: production
             - name: PORT
               value: "3000"
           resources:
             requests:
-              cpu: 250m
-              memory: 256Mi
-            limits:
               cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 1
               memory: 1Gi
           readinessProbe:
             httpGet:
