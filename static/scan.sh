@@ -284,9 +284,13 @@ if [ "$MODE" = "slurm" ]; then
             printf "JOB_WASTE %.1f\n", cw
         }
 
-        # simple GPU detection from AllocTRES
-        if (match($7, /gres\/gpu[^,]*=([0-9]+)/, ga)) {
-            gpu_n++; gpu_h += (ga[1]+0) * esec / 3600
+        # GPU detection from AllocTRES (POSIX-compatible, no gawk extensions)
+        if (index($7, "gres/gpu") > 0) {
+            gpu_n++
+            gpu_str = $7
+            sub(/.*gres\/gpu[^,]*=/, "", gpu_str)
+            sub(/,.*/, "", gpu_str)
+            gpu_h += (gpu_str+0) * esec / 3600
         }
 
     }
