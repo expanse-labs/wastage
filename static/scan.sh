@@ -520,6 +520,8 @@ if [ "$MODE" = "kubernetes" ]; then
     # Get pod resource requests via jsonpath (reliable, unlike line-by-line JSON parsing)
     POD_REQUESTS=$(kubectl get pods $NS_FLAG -o jsonpath='{range .items[?(@.status.phase=="Running")]}{.metadata.namespace}{"\t"}{.metadata.name}{"\t"}{.spec.containers[0].resources.requests.cpu}{"\t"}{.spec.containers[0].resources.requests.memory}{"\n"}{end}' 2>/dev/null)
 
+    declare -A CAT_PODS CAT_CPU CAT_MEM CAT_COST
+
     if [ "$HAS_METRICS" = "true" ] && [ -f "$TMPDIR_METRICS/pods-1.txt" ]; then
         # Average metrics across 3 samples, then join with resource requests
         METRICS_AVG=$(cat "$TMPDIR_METRICS"/pods-*.txt | awk '{
@@ -563,7 +565,6 @@ if [ "$MODE" = "kubernetes" ]; then
 
         SUM_CPU_WASTE=0
         SUM_MEM_WASTE=0
-        declare -A CAT_PODS CAT_CPU CAT_MEM CAT_COST
 
         while IFS=$'\t' read -r ns pod_name actual_cpu actual_mem; do
             [ -z "$ns" ] && continue
