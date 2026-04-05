@@ -1,6 +1,6 @@
 #!/bin/bash
 # wastage.expanse.sh — Compute Waste Analysis
-# Usage: curl -s https://wastage.expanse.sh/scan | bash
+# Usage: curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh
 #
 # Analyses SLURM or Kubernetes cluster resource waste.
 # All processing happens locally. Only aggregates are sent for the shareable report.
@@ -42,7 +42,7 @@ while [ $# -gt 0 ]; do
         --json)   JSON_OUTPUT=true; shift ;;
         --days)   DAYS="${2:-30}"; shift 2 ;;
         --help|-h)
-            echo "Usage: curl -s https://wastage.expanse.sh/scan | bash [-- OPTIONS]"
+            echo "Usage: curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh [OPTIONS]"
             echo "  --local    Skip upload, print report locally only"
             echo "  --json     Output JSON instead of ASCII report"
             echo "  --days N   Analyse last N days (default: 30, SLURM only)"
@@ -873,11 +873,6 @@ SHOW_LEADERBOARD=false
 CLUSTER_NAME=""
 COUNTRY=""
 EMAIL=""
-
-if [ "$LOCAL_ONLY" = "false" ] && [ ! -t 0 ]; then
-    info "To join the leaderboard and enter your email, run:"
-    info "  curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh"
-fi
 
 if [ "$LOCAL_ONLY" = "false" ] && [ -t 0 ]; then
     printf "Show your cluster on the leaderboard? (y/N): "

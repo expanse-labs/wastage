@@ -15,7 +15,7 @@
 		return n.toLocaleString();
 	}
 
-	const CMD = 'curl -s https://wastage.expanse.sh/scan | bash';
+	const CMD = 'curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh';
 	const REPORT_URL = `https://wastage.expanse.sh/r/${r.id}`;
 
 	function copyUrl() {

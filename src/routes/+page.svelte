@@ -5,7 +5,7 @@
 
 	let copied = $state(false);
 
-	const CMD = 'curl -s https://wastage.expanse.sh/scan | bash';
+	const CMD = 'curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh';
 
 	function copyCommand() {
 		navigator.clipboard.writeText(CMD);

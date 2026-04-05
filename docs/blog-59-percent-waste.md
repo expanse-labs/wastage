@@ -13,7 +13,7 @@ I built an open-source tool that tracks SLURM job wastage, and ran it on two UK 
 [wastage.expanse.sh](https://wastage.expanse.sh) is an open-source tool that analyses compute waste on any SLURM cluster. One command, shareable report.
 
 ```bash
-curl -s https://wastage.expanse.sh/scan | bash
+curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh
 ```
 
 It processes `sacct` data locally on your machine, computes CPU waste from allocated vs actually used resources, and returns a shareable URL with your results. No raw job data leaves your cluster. The server only aggregates anonymised telemetry for a nice leaderboard to track the most efficient clusters globally.
@@ -122,7 +122,7 @@ The gap between "what was allocated" and "what was used" is the waste. sacct can
 I open-sourced the tool (open to enhancement PRs and additional scheduler support). You can run it with:
 
 ```bash
-curl -s https://wastage.expanse.sh/scan | bash
+curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh
 ```
 
 It works on any SLURM cluster. Takes 30 seconds to 10 minutes depending on your cluster's size. Everything is processed locally, you can inspect the repo for more detail. At the end you get an ASCII report in your terminal and a shareable URL to compete with fellow cluster builders and pioneers.
