@@ -144,7 +144,7 @@ MIT
 
 ---
 
-Built by [Expanse](https://expanse.sh) (YC P26). We're building the intelligence layer for large-scale compute.
+Built by [Expanse](https://expanse.sh) (YC P26). We're building the intelligence layer for compute.
 
 | | Free | Pro |
 |---|---|---|
