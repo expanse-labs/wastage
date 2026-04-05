@@ -1,6 +1,6 @@
 #!/bin/bash
 # wastage.expanse.sh — Compute Waste Analysis
-# Usage: curl -s https://wastage.expanse.sh/scan | bash
+# Usage: curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh
 #
 # Analyses SLURM or Kubernetes cluster resource waste.
 # All processing happens locally. Only aggregates are sent for the shareable report.
@@ -42,7 +42,7 @@ while [ $# -gt 0 ]; do
         --json)   JSON_OUTPUT=true; shift ;;
         --days)   DAYS="${2:-30}"; shift 2 ;;
         --help|-h)
-            echo "Usage: curl -s https://wastage.expanse.sh/scan | bash [-- OPTIONS]"
+            echo "Usage: curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh [OPTIONS]"
             echo "  --local    Skip upload, print report locally only"
             echo "  --json     Output JSON instead of ASCII report"
             echo "  --days N   Analyse last N days (default: 30, SLURM only)"
@@ -712,7 +712,7 @@ if [ "$MODE" = "kubernetes" ]; then
 
     TOTAL_CORE_HOURS=0
     WASTED_CORE_HOURS=$(echo "$TOTAL_COST $COST_PER_CORE_HOUR" | awk '{printf "%.2f", ($2>0)?$1/$2:0}')
-    MEM_RELIABLE=true
+    MEM_RELIABLE=$HAS_METRICS
     FAILED_JOBS=0
     FAIL_PCT=0
     FAIL_CORE_PCT=0
@@ -943,7 +943,7 @@ RESPONSE=$(http_post "$API_URL" "$PAYLOAD" 2>/dev/null) || {
     exit 0
 }
 
-REPORT_URL=$(echo "$RESPONSE" | awk -F'"' '/"url"/{print $4}')
+REPORT_URL=$(echo "$RESPONSE" | tr -d '\n' | awk -F'"' '{for(i=1;i<=NF;i++){if($i=="url")print $(i+2)}}')
 if [ -n "$REPORT_URL" ]; then
     echo ""
     echo -e "  ${BOLD}View full report:${NC} ${BLUE}${REPORT_URL}${NC}"

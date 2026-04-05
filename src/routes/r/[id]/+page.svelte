@@ -15,7 +15,7 @@
 		return n.toLocaleString();
 	}
 
-	const CMD = 'curl -s https://wastage.expanse.sh/scan | bash';
+	const CMD = 'curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh';
 	const REPORT_URL = `https://wastage.expanse.sh/r/${r.id}`;
 
 	function copyUrl() {
@@ -173,6 +173,21 @@
 				<p class="mt-2 text-sm text-muted">{r.scheduler_type === 'slurm' ? 'jobs' : 'pods'} analysed</p>
 			</div>
 		</div>
+
+		<!-- SLURM tracking limitation note -->
+		{#if r.scheduler_type === 'slurm' && r.total_core_hours > 0}
+			{@const denominator = r.total_core_hours * (r.avg_cpu_waste_pct / 100)}
+			{@const trackedPct = denominator > 0 ? Math.round((r.wasted_core_hours / denominator) * 100) : 100}
+			{#if trackedPct < 80}
+				<div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+					<p class="text-sm text-amber-800">
+						<span class="font-medium">Some jobs on this cluster lack CPU accounting.</span>
+						SLURM's sacct only tracks jobs with cgroup data enabled. The waste figures above are based on tracked jobs only.
+						<a href="https://app.expanse.sh" class="underline font-medium">Expanse tracks all jobs via cgroups (free) →</a>
+					</p>
+				</div>
+			{/if}
+		{/if}
 
 		<!-- Failed jobs banner -->
 		{#if r.failed_jobs > 0}
