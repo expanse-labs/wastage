@@ -93,8 +93,12 @@ export function validateHistogram(
 	const histogramAvg = weightedSum / totalJobs;
 	if (Math.abs(histogramAvg - reportedAvg) > 5) return false;
 
-	for (const [, count] of buckets) {
-		if (count / totalJobs > 0.9) return false;
+	// Only flag suspicious uniformity when there are enough buckets to expect spread.
+	// Small K8s clusters with uniform workloads legitimately concentrate in one bucket.
+	if (buckets.length >= 3) {
+		for (const [, count] of buckets) {
+			if (count / totalJobs > 0.95) return false;
+		}
 	}
 
 	return true;
