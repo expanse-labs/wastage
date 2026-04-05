@@ -26,9 +26,11 @@ Works on **SLURM** and **Kubernetes**. All processing happens locally on your ma
 
 Parses `sacct` data from the last 30 days (configurable with `--days`). Computes per-job CPU and memory waste from actual vs allocated resources. Flags GPU jobs. Asks for your cost-per-core-hour (default: $0.10).
 
-### Kubernetes mode
+### Kubernetes mode (early)
 
-Takes 3 metric samples over 90 seconds from `kubectl top` for accuracy. Analyses both pod-level over-provisioning and node-level idle capacity. Auto-detects instance types from node labels for real $ cost figures. Categorises workloads into 13 types (Database, Web/API, ML/AI, Queue, CI/CD, Monitoring, etc.) using pod names, namespaces, and labels.
+K8s support is functional but limited. It takes 3 metric samples over 90 seconds from `kubectl top`, which gives you a point-in-time snapshot, not historical trends. It falls back gracefully to namespace-scoped access if cluster-wide permissions aren't available. Categorises workloads into 13 types using pod names, namespaces, and labels.
+
+**Known limitations:** no historical data (snapshot only), cost estimates require node access (often restricted by RBAC), GPU utilisation not measurable from outside pods. For continuous K8s waste tracking, see [Expanse](https://app.expanse.sh) (free).
 
 ## Usage
 
@@ -127,7 +129,7 @@ This tool analyses what SLURM and Kubernetes expose through their standard APIs.
 | **SLURM CPU tracking** | Many clusters lack cgroup accounting. TotalCPU is zero for MPI jobs without it. The tool filters these out and reports from tracked jobs only. | Expanse's daemon tracks CPU via cgroups for every job, including MPI ranks. (Free) |
 | **SLURM memory** | `MaxRSS` from sacct only captures the batch script's memory, not the actual compute processes. Memory waste is unreliable on most clusters. | Per-process memory tracking via cgroup polling. (Free) |
 | **GPU utilisation** | sacct records GPU allocation but not utilisation. The tool reports GPU-hours allocated, not GPU-hours used. | GPU core and memory utilisation via DCGM/nvidia-smi polling. (Free) |
-| **K8s is a snapshot** | `kubectl top` gives a point-in-time reading averaged over 90 seconds. No historical data. | Continuous metric collection with historical trends. (Free) |
+| **K8s is a snapshot** | `kubectl top` gives a 90-second point-in-time reading. No historical data, no trends, no cost attribution without node access. K8s mode is early and significantly less capable than SLURM mode. | Continuous metric collection with historical trends. (Free) |
 | **Large clusters are slow** | sacct queries on clusters like ARCHER2 (1M+ records) can take minutes. The tool auto-shrinks the time window to cope. | Expanse stores metrics locally and queries instantly. (Free) |
 | **Per-job breakdown** | This tool reports cluster-wide aggregates. You can't see which specific jobs or users are the worst offenders. | Per-job, per-user waste breakdown with drill-down. (Free) |
 | **Predictions & analysis** | No resource recommendations or failure analysis. | Resource prediction before submission, failure root-cause analysis, optimisation suggestions. (Pro) |
