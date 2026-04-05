@@ -43,10 +43,10 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	const data = result.data;
 
-	if (!validateHistogram(data.histogram_cpu, data.avg_cpu_waste_pct, data.job_count)) {
+	if (!validateHistogram(data.histogram_cpu, data.avg_cpu_waste_pct)) {
 		return json({ error: 'CPU histogram inconsistent with reported averages' }, { status: 400 });
 	}
-	if (!validateHistogram(data.histogram_mem, data.avg_mem_waste_pct, data.job_count)) {
+	if (!validateHistogram(data.histogram_mem, data.avg_mem_waste_pct)) {
 		return json({ error: 'Memory histogram inconsistent with reported averages' }, { status: 400 });
 	}
 

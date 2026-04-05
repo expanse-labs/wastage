@@ -65,8 +65,7 @@ export const emailCaptureSchema = z.object({
  */
 export function validateHistogram(
 	histogram: Record<string, number> | undefined,
-	reportedAvg: number,
-	jobCount: number
+	reportedAvg: number
 ): boolean {
 	if (!histogram) return true;
 

@@ -522,7 +522,11 @@ if [ "$MODE" = "kubernetes" ]; then
 
     declare -A CAT_PODS CAT_CPU CAT_MEM CAT_COST
     METRICS_AVG=""
-    TOTAL_JOBS=0
+
+    # Count running pods from requests data (always available, even without metrics-server)
+    TOTAL_JOBS=$(echo "$POD_REQUESTS" | grep -c . 2>/dev/null || echo 0)
+    [ "$TOTAL_JOBS" -eq 0 ] && TOTAL_JOBS=0
+
     SUM_CPU_WASTE=0
     SUM_MEM_WASTE=0
 
@@ -612,6 +616,13 @@ if [ "$MODE" = "kubernetes" ]; then
 
         AVG_CPU_WASTE=$(echo "$SUM_CPU_WASTE $TOTAL_JOBS" | awk '{if($2>0) printf "%.2f",$1/$2; else print "0"}')
         AVG_MEM_WASTE=$(echo "$SUM_MEM_WASTE $TOTAL_JOBS" | awk '{if($2>0) printf "%.2f",$1/$2; else print "0"}')
+    else
+        # No metrics-server: we can see pod requests but not actual usage.
+        # Report pod count but mark waste as unmeasurable.
+        info "  $TOTAL_JOBS running pods found (requests only, no usage data)."
+        AVG_CPU_WASTE=0
+        AVG_MEM_WASTE=0
+        MEM_RELIABLE=false
     fi
 
     TOTAL_NODE_COST_MONTHLY=0
