@@ -175,8 +175,9 @@
 		</div>
 
 		<!-- SLURM tracking limitation note -->
-		{#if r.scheduler_type === 'slurm' && r.total_core_hours > 0 && r.wasted_core_hours > 0}
-			{@const trackedPct = Math.round((r.wasted_core_hours / (r.total_core_hours * (r.avg_cpu_waste_pct / 100))) * 100)}
+		{#if r.scheduler_type === 'slurm' && r.total_core_hours > 0}
+			{@const denominator = r.total_core_hours * (r.avg_cpu_waste_pct / 100)}
+			{@const trackedPct = denominator > 0 ? Math.round((r.wasted_core_hours / denominator) * 100) : 100}
 			{#if trackedPct < 80}
 				<div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
 					<p class="text-sm text-amber-800">

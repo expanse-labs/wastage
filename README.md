@@ -44,13 +44,13 @@ curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh
 
 ```bash
 # Run locally without uploading (no network calls)
-curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh -s -- --local
+curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh --local
 
 # Output JSON instead of ASCII report
-curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh -s -- --json
+curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh --json
 
 # Analyse last 90 days instead of 30 (SLURM only)
-curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh -s -- --days 90
+curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh --days 90
 ```
 
 ### What gets sent
