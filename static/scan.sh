@@ -857,7 +857,7 @@ if [ "$LOCAL_ONLY" = "false" ] && [ -t 0 ]; then
             ;;
     esac
 
-    printf "Email for your full report (press Enter to skip): "
+    printf "Join the Expanse mailing list for HPC insights (Enter to skip): "
     read -r EMAIL
 fi
 

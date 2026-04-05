@@ -304,9 +304,10 @@
 		<!-- Email capture -->
 		<div class="mt-8 rounded-xl border border-subtle-border bg-card p-6">
 			{#if emailStatus === 'success'}
-				<p class="text-center text-success font-medium">Thanks! We'll be in touch.</p>
+				<p class="text-center text-success font-medium">You're on the list. Welcome.</p>
 			{:else}
-				<p class="text-sm font-medium text-foreground">Get notified about Expanse</p>
+				<p class="text-sm font-medium text-foreground">Join the Expanse mailing list</p>
+				<p class="mt-1 text-xs text-muted">HPC insights, waste analysis tips, and product updates. No spam.</p>
 				<div class="mt-3 flex gap-3">
 					<input
 						type="email"
