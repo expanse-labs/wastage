@@ -4,7 +4,8 @@ import pool from '$lib/server/db.js';
 
 /** Top clusters ranked by utilisation score. Opt-in only. Cached for 30 seconds. */
 export const GET: RequestHandler = async ({ url }) => {
-	const limit = Math.min(parseInt(url.searchParams.get('limit') || '10'), 100);
+	const rawLimit = parseInt(url.searchParams.get('limit') || '10');
+	const limit = isNaN(rawLimit) ? 10 : Math.min(Math.max(rawLimit, 1), 100);
 
 	try {
 		const result = await pool.query(
