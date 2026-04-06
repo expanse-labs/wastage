@@ -695,16 +695,13 @@ if [ "$MODE" = "kubernetes" ]; then
     if [ "$TOTAL_NODE_COST_MONTHLY" != "0" ]; then
         TOTAL_COST=$(echo "$TOTAL_NODE_COST_MONTHLY $AVG_CPU_WASTE" | awk '{printf "%.2f", $1 * ($2/100)}')
     else
-        # No node access: estimate cost from pod-level CPU requests × default rate
-        # Sum requested CPU across all pods (in millicores), convert to core-hours for the sample window
-        POD_CPU_COST=$(echo "$METRICS_AVG" | awk -F'\t' '
-        { req_cpu += $3 }
-        END {
-            core_hours = (req_cpu / 1000) * (90 / 3600)  # 90-second sample
-            monthly = core_hours * (730 * 3600 / 90)      # extrapolate to monthly
-            printf "%.2f", monthly * 0.10                  # $0.10/core-hour default
+        # No node access: estimate monthly cost from pod CPU requests
+        # total_requested_cores × 730 hrs/month × $0.10/core-hr × waste%
+        TOTAL_COST=$(echo "$TOTAL_CPU_WEIGHT $AVG_CPU_WASTE" | awk '{
+            cores = $1 / 1000
+            monthly_cost = cores * 730 * 0.10
+            printf "%.2f", monthly_cost * ($2 / 100)
         }')
-        TOTAL_COST=$(echo "$POD_CPU_COST $AVG_CPU_WASTE" | awk '{printf "%.2f", $1 * ($2/100)}')
     fi
 
     CATEGORIES_JSON="{"

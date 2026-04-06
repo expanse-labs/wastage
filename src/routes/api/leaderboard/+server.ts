@@ -13,7 +13,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			`SELECT cluster_name, username, report_type, utilisation_score, scheduler_type, country, job_count, ranking_score
 			 FROM reports
 			 WHERE show_on_leaderboard = true
-			   AND report_type = $2
+			   AND (report_type = $2 OR ($2 = 'cluster' AND report_type IS NULL))
 			   AND (CASE WHEN $2 = 'cluster' THEN cluster_name IS NOT NULL ELSE username IS NOT NULL END)
 			 ORDER BY ranking_score DESC
 			 LIMIT $1`,
