@@ -18,7 +18,7 @@ export const load: PageServerLoad = async ({ params }) => {
 				gpu_jobs, gpu_hours, total_estimated_cost_usd, utilisation_score, ranking_score,
 				cluster_name, country, show_on_leaderboard, histogram_cpu, histogram_mem,
 				cost_per_core_hour, categories, total_core_hours, wasted_core_hours,
-				failed_jobs, failed_job_pct, failed_core_pct
+				failed_jobs, failed_job_pct, failed_core_pct, report_type, username
 			FROM reports WHERE id = $1`,
 			[id]
 		);

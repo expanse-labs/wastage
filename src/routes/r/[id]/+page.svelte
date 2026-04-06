@@ -75,9 +75,9 @@
 </script>
 
 <svelte:head>
-	<title>Waste Report — {r.utilisation_score.toFixed(0)}/100 | wastage.expanse.sh</title>
+	<title>Waste Report | {r.utilisation_score.toFixed(0)}/100 | wastage.expanse.sh</title>
 	<meta name="description" content="Analyzed {r.job_count} {r.scheduler_type === 'slurm' ? 'jobs' : 'pods'}. Estimated ${r.total_estimated_cost_usd.toLocaleString()} wasted." />
-	<meta property="og:title" content="Compute Waste Report — {r.utilisation_score.toFixed(0)}% Efficiency" />
+	<meta property="og:title" content="Compute Waste Report | {r.utilisation_score.toFixed(0)}% Efficiency" />
 	<meta property="og:description" content="Analyzed {r.job_count} {r.scheduler_type === 'slurm' ? 'jobs' : 'pods'}. Estimated ${r.total_estimated_cost_usd.toLocaleString()} wasted." />
 	<meta property="og:image" content="https://wastage.expanse.sh/api/og/{r.id}" />
 	<meta property="og:type" content="website" />
@@ -116,9 +116,14 @@
 		{/if}
 
 		<!-- Title -->
-		<h1 class="text-2xl font-bold text-foreground md:text-3xl">Compute Waste Report</h1>
+		<h1 class="text-2xl font-bold text-foreground md:text-3xl">
+			Compute Waste Report
+			{#if r.report_type === 'user'}
+				<span class="ml-2 align-middle rounded-full bg-purple-100 px-2.5 py-0.5 text-sm font-medium text-purple-800">User</span>
+			{/if}
+		</h1>
 		<p class="mt-2 text-muted">
-			{r.cluster_name || 'Anonymous cluster'} ·
+			{r.report_type === 'user' && r.username ? r.username : (r.cluster_name || 'Anonymous cluster')} ·
 			<span class="rounded-full px-2 py-0.5 text-xs font-medium {r.scheduler_type === 'slurm' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">
 				{r.scheduler_type.toUpperCase()}
 			</span>

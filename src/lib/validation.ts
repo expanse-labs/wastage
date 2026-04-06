@@ -48,7 +48,9 @@ export const ingestSchema = z.object({
 	failed_jobs: z.number().int().min(0).optional().default(0),
 	failed_job_pct: z.number().min(0).max(100).optional().default(0),
 	failed_core_pct: z.number().min(0).max(100).optional().default(0),
-	categories: categorySchema.nullable().optional()
+	categories: categorySchema.nullable().optional(),
+	report_type: z.enum(['cluster', 'user']).optional().default('cluster'),
+	username: z.string().max(50).regex(/^[a-zA-Z0-9 \-_.]*$/).nullable().optional()
 });
 
 export type IngestPayload = z.infer<typeof ingestSchema>;

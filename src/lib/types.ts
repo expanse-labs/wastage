@@ -26,6 +26,8 @@ export interface Report {
 	failed_jobs: number;
 	failed_job_pct: number;
 	failed_core_pct: number;
+	report_type: 'cluster' | 'user';
+	username: string | null;
 }
 
 /** Per-category waste breakdown for Kubernetes workloads. */
@@ -45,9 +47,11 @@ export interface GlobalStats {
 	cluster_count: number;
 }
 
-/** A single row on the cluster utilisation leaderboard. */
+/** A single row on the utilisation leaderboard (cluster or user). */
 export interface LeaderboardEntry {
-	cluster_name: string;
+	cluster_name: string | null;
+	username: string | null;
+	report_type: 'cluster' | 'user';
 	utilisation_score: number;
 	scheduler_type: string;
 	country: string | null;

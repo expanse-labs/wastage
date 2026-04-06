@@ -608,6 +608,8 @@ if [ "$MODE" = "kubernetes" ]; then
 
         SUM_CPU_WASTE=0
         SUM_MEM_WASTE=0
+        WEIGHTED_CPU_WASTE=0
+        TOTAL_CPU_WEIGHT=0
 
         while IFS=$'\t' read -r ns pod_name actual_cpu actual_mem; do
             [ -z "$ns" ] && continue
@@ -636,11 +638,14 @@ if [ "$MODE" = "kubernetes" ]; then
 
             SUM_CPU_WASTE=$(echo "$SUM_CPU_WASTE $cpu_waste" | awk '{printf "%.2f", $1+$2}')
             SUM_MEM_WASTE=$(echo "$SUM_MEM_WASTE $mem_waste" | awk '{printf "%.2f", $1+$2}')
+            WEIGHTED_CPU_WASTE=$(echo "$WEIGHTED_CPU_WASTE $cpu_waste $req_cpu" | awk '{printf "%.2f", $1 + ($2 * $3)}')
+            TOTAL_CPU_WEIGHT=$(echo "$TOTAL_CPU_WEIGHT $req_cpu" | awk '{printf "%.2f", $1 + $2}')
 
+            # Weight histogram by requested CPU (millicores) so large pods dominate
             b=$(bucket_for "$cpu_waste")
-            [ -n "$b" ] && HIST_CPU["$b"]=$(( ${HIST_CPU[$b]:-0} + 1 ))
+            { [ -z "$b" ] || [ -z "$req_cpu" ]; } || HIST_CPU["$b"]=$(echo "${HIST_CPU[$b]:-0} ${req_cpu}" | awk '{printf "%.2f", $1 + $2}')
             b=$(bucket_for "$mem_waste")
-            [ -n "$b" ] && HIST_MEM["$b"]=$(( ${HIST_MEM[$b]:-0} + 1 ))
+            { [ -z "$b" ] || [ -z "$req_mem" ]; } || HIST_MEM["$b"]=$(echo "${HIST_MEM[$b]:-0} ${req_mem}" | awk '{printf "%.2f", $1 + $2}')
 
             # Categories
             CAT_PODS[$category]=$(( ${CAT_PODS[$category]:-0} + 1 ))
@@ -649,7 +654,7 @@ if [ "$MODE" = "kubernetes" ]; then
 
         done <<< "$METRICS_AVG"
 
-        AVG_CPU_WASTE=$(echo "$SUM_CPU_WASTE $TOTAL_JOBS" | awk '{if($2>0) printf "%.2f",$1/$2; else print "0"}')
+        AVG_CPU_WASTE=$(echo "$WEIGHTED_CPU_WASTE $TOTAL_CPU_WEIGHT" | awk '{if($2>0) printf "%.2f",$1/$2; else print "0"}')
         AVG_MEM_WASTE=$(echo "$SUM_MEM_WASTE $TOTAL_JOBS" | awk '{if($2>0) printf "%.2f",$1/$2; else print "0"}')
     else
         # No metrics-server: we can see pod requests but not actual usage.
@@ -875,20 +880,31 @@ SHOW_LEADERBOARD=false
 CLUSTER_NAME=""
 COUNTRY=""
 EMAIL=""
+REPORT_TYPE="cluster"
+USERNAME=""
 
 if [ "$LOCAL_ONLY" = "false" ] && [ -t 0 ]; then
-    printf "Show your cluster on the leaderboard? (y/N): "
+    printf "Join the leaderboard? [c]luster / [u]ser / [n]o (default: n): "
     read -r lb_choice
     case "$lb_choice" in
-        y|Y|yes|Yes)
+        c|C|cluster)
             SHOW_LEADERBOARD=true
+            REPORT_TYPE="cluster"
             printf "Cluster name: "
             read -r CLUSTER_NAME
-            # Sanitize: alphanumeric, spaces, hyphens, max 50
             CLUSTER_NAME=$(echo "$CLUSTER_NAME" | tr -cd 'a-zA-Z0-9 -' | head -c 50)
             printf "Country: "
             read -r COUNTRY
             COUNTRY=$(echo "$COUNTRY" | head -c 100)
+            ;;
+        u|U|user)
+            SHOW_LEADERBOARD=true
+            REPORT_TYPE="user"
+            DEFAULT_USER=$(whoami 2>/dev/null || echo "")
+            printf "Display name (default: $DEFAULT_USER): "
+            read -r USERNAME
+            [ -z "$USERNAME" ] && USERNAME="$DEFAULT_USER"
+            USERNAME=$(echo "$USERNAME" | tr -cd 'a-zA-Z0-9 _.-' | head -c 50)
             ;;
     esac
 
@@ -923,7 +939,9 @@ PAYLOAD=$(cat <<JSONEOF
   "wasted_core_hours": ${WASTED_CORE_HOURS:-0},
   "failed_jobs": ${FAILED_JOBS:-0},
   "failed_job_pct": ${FAIL_PCT:-0},
-  "failed_core_pct": ${FAIL_CORE_PCT:-0}
+  "failed_core_pct": ${FAIL_CORE_PCT:-0},
+  "report_type": "$REPORT_TYPE",
+  "username": $([ -n "$USERNAME" ] && echo "\"$(escape_json "$USERNAME")\"" || echo "null")
 }
 JSONEOF
 )
