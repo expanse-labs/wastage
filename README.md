@@ -151,10 +151,10 @@ Built by [Expanse](https://expanse.sh) (YC P26). We're building the intelligence
 | Live metrics via cgroups | ✓ | ✓ |
 | Per-job, per-user waste | ✓ | ✓ |
 | Memory & GPU tracking | ✓ | ✓ |
-| API access | ✓ | ✓ |
+| API integration | ✓ | ✓ |
 | Resource prediction | | ✓ |
-| Failure root-cause analysis | | ✓ |
+| Failure root-cause analysis suggestions | | ✓ |
 | Optimisation suggestions | | ✓ |
-| Natural language knowledge base | | ✓ |
+| Query your cluster with natural language | | ✓ |
 
 [Get started free → app.expanse.sh](https://app.expanse.sh)

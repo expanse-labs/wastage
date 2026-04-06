@@ -392,10 +392,12 @@ if [ "$MODE" = "slurm" ]; then
     # compute process memory (MPI ranks, srun steps). The number is unreliable.
     # We report it with a caveat, or skip it if it looks like batch overhead.
     MEM_RELIABLE=true
-    if [ "$(echo "$AVG_MEM_WASTE" | awk '{print ($1 > 90)}')" = "1" ]; then
-        # >90% memory waste mostly means MaxRSS is batch overhead only
+    if [ "${MEM_JOBS:-0}" -eq 0 ] 2>/dev/null; then
         MEM_RELIABLE=false
-        AVG_MEM_WASTE=0
+        AVG_MEM_WASTE=-1
+    elif [ "$(echo "$AVG_MEM_WASTE" | awk '{print ($1 > 90)}')" = "1" ]; then
+        MEM_RELIABLE=false
+        AVG_MEM_WASTE=-1
     fi
 
     CPU_UTIL=$(echo "$AVG_CPU_WASTE" | awk '{printf "%.2f",100-$1}')
@@ -674,7 +676,7 @@ if [ "$MODE" = "kubernetes" ]; then
         # Report pod count but mark waste as unmeasurable.
         info "  $TOTAL_JOBS running pods found (requests only, no usage data)."
         AVG_CPU_WASTE=0
-        AVG_MEM_WASTE=0
+        AVG_MEM_WASTE=-1
         MEM_RELIABLE=false
     fi
 
@@ -743,8 +745,12 @@ if [ "$MODE" = "kubernetes" ]; then
     CPU_PARTIAL=false
 
     CPU_UTIL=$(echo "$AVG_CPU_WASTE" | awk '{printf "%.2f",100-$1}')
-    MEM_UTIL=$(echo "$AVG_MEM_WASTE" | awk '{printf "%.2f",100-$1}')
-    UTIL_SCORE=$(echo "$CPU_UTIL $MEM_UTIL" | awk '{printf "%.1f",0.6*$1+0.4*$2}')
+    if [ "$MEM_RELIABLE" = "true" ] && [ "$AVG_MEM_WASTE" != "-1" ]; then
+        MEM_UTIL=$(echo "$AVG_MEM_WASTE" | awk '{printf "%.2f",100-$1}')
+        UTIL_SCORE=$(echo "$CPU_UTIL $MEM_UTIL" | awk '{printf "%.1f",0.6*$1+0.4*$2}')
+    else
+        UTIL_SCORE="$CPU_UTIL"
+    fi
 
     RANKING_SCORE=$(echo "$UTIL_SCORE $TOTAL_JOBS" | awk '{
         lj=($2>1)?log($2)/log(10):0; printf "%.2f",$1*(lj/4<1?lj/4:1)
@@ -876,7 +882,7 @@ if [ "$JSON_OUTPUT" = "false" ]; then
     printf "  ║  • %-52s║\n" "Per-job, per-user waste breakdown"
     printf "  ║  • %-52s║\n" "GPU core & memory waste tracking"
     printf "  ║  • %-52s║\n" "Historical trends and continuous monitoring"
-    printf "  ║  • %-52s║\n" "API access for your own dashboards"
+    printf "  ║  • %-52s║\n" "API integration for your existing tools"
     echo -e "  $BLANK"
     printf "  ║  ${GREEN}${BOLD}%-54s${NC}║\n" "Get started → app.expanse.sh"
     echo -e "  $BLANK"
@@ -922,7 +928,7 @@ if [ "$LOCAL_ONLY" = "false" ] && [ -t 0 ]; then
             ;;
     esac
 
-    printf "Join the Expanse mailing list for HPC insights (Enter to skip): "
+    printf "Email to receive this report as PDF + Expanse newsletter (Enter to skip): "
     read -r EMAIL
 fi
 
@@ -934,7 +940,7 @@ PAYLOAD=$(cat <<JSONEOF
   "job_count": $TOTAL_JOBS,
   "node_count": $NODE_COUNT,
   "avg_cpu_waste_pct": $AVG_CPU_WASTE,
-  "avg_mem_waste_pct": $AVG_MEM_WASTE,
+  "avg_mem_waste_pct": $([ "$AVG_MEM_WASTE" = "-1" ] && echo "null" || echo "$AVG_MEM_WASTE"),
   "avg_gpu_core_waste_pct": ${AVG_GPU_CORE_WASTE:-null},
   "avg_gpu_mem_waste_pct": ${AVG_GPU_MEM_WASTE:-null},
   "gpu_jobs": $GPU_JOBS,
@@ -990,3 +996,4 @@ else
         warn "Unexpected response from server."
     fi
 fi
+

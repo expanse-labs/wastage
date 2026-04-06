@@ -160,6 +160,9 @@
 					${r.total_estimated_cost_usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}
 				</p>
 				<p class="mt-2 text-sm text-muted">estimated waste</p>
+				{#if r.cost_per_core_hour === 0.1}
+					<p class="mt-1 text-[10px] text-faint">at cloud rates ($0.10/core-hr)</p>
+				{/if}
 			</div>
 
 			<!-- Core-hours wasted -->
@@ -218,6 +221,7 @@
 						<div class="h-2 rounded-full {wasteColor(r.avg_cpu_waste_pct)}" style="width: {100 - r.avg_cpu_waste_pct}%"></div>
 					</div>
 				</div>
+				{#if r.avg_mem_waste_pct != null}
 				<div>
 					<div class="flex items-center justify-between text-sm">
 						<span class="text-muted">Memory</span>
@@ -227,6 +231,18 @@
 						<div class="h-2 rounded-full {wasteColor(r.avg_mem_waste_pct)}" style="width: {100 - r.avg_mem_waste_pct}%"></div>
 					</div>
 				</div>
+				{:else}
+				<div>
+					<div class="flex items-center justify-between text-sm">
+						<span class="text-muted">Memory</span>
+						<span class="text-sm text-faint">N/A</span>
+					</div>
+					<p class="mt-1 text-xs text-faint">
+						{r.scheduler_type === 'slurm' ? 'sacct memory tracking is limited on this cluster. MaxRSS only captures batch script overhead, not actual job memory.' : 'Memory metrics unavailable.'}
+						<a href="https://app.expanse.sh" class="text-foreground underline">Expanse tracks per-node memory via cgroups (free) →</a>
+					</p>
+				</div>
+				{/if}
 				{#if r.avg_gpu_core_waste_pct != null}
 					<div>
 						<div class="flex items-center justify-between text-sm">
@@ -322,16 +338,16 @@
 						<li>Live CPU, memory, and GPU utilisation per job</li>
 						<li>Per-job, per-user waste breakdown</li>
 						<li>GPU core and memory waste tracking</li>
-						<li>API access for your own dashboards</li>
+						<li>API integration for your existing tools</li>
 					</ul>
 				</div>
 				<div>
 					<p class="text-xs font-semibold uppercase text-muted">Pro</p>
 					<ul class="mt-2 space-y-1 text-sm text-foreground">
 						<li>Resource prediction before you submit</li>
-						<li>Failure root-cause analysis</li>
+						<li>Failure root-cause analysis suggestions</li>
 						<li>Optimisation suggestions per job</li>
-						<li>Natural language knowledge base</li>
+						<li>Query your cluster with natural language</li>
 					</ul>
 				</div>
 			</div>
@@ -356,8 +372,8 @@
 			{#if emailStatus === 'success'}
 				<p class="text-center text-success font-medium">You're on the list. Welcome.</p>
 			{:else}
-				<p class="text-sm font-medium text-foreground">Join the Expanse mailing list</p>
-				<p class="mt-1 text-xs text-muted">HPC insights, waste analysis tips, and product updates. No spam.</p>
+				<p class="text-sm font-medium text-foreground">Get this report as a PDF</p>
+				<p class="mt-1 text-xs text-muted">Enter your email to receive this report and stay updated with the Expanse newsletter.</p>
 				<div class="mt-3 flex gap-3">
 					<input
 						type="email"

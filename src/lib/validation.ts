@@ -23,7 +23,7 @@ export const ingestSchema = z.object({
 	job_count: z.number().int().min(1).max(1000000),
 	node_count: z.number().int().min(0).max(100000).optional().default(0),
 	avg_cpu_waste_pct: z.number().min(0).max(100),
-	avg_mem_waste_pct: z.number().min(0).max(100),
+	avg_mem_waste_pct: z.number().min(0).max(100).nullable(),
 	avg_gpu_core_waste_pct: z.number().min(0).max(100).nullable().optional(),
 	avg_gpu_mem_waste_pct: z.number().min(0).max(100).nullable().optional(),
 	gpu_jobs: z.number().int().min(0).max(100000).optional().default(0),
