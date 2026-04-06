@@ -382,14 +382,14 @@
 
 	<!-- Footer -->
 	<footer class="border-t border-subtle-border">
-		<div class="mx-auto flex max-w-[960px] items-center justify-between px-6 py-8">
-			<p class="text-sm text-muted">
+		<div class="mx-auto flex max-w-[960px] items-center px-6 py-8">
+			<p class="text-sm text-muted inline-flex items-center gap-2">
 				Powered by <a href="https://expanse.sh" class="text-foreground underline hover:no-underline">Expanse</a>
-			</p>
-			<span class="inline-flex items-center gap-1.5 rounded-full border border-[#F26522]/20 bg-[#FFF6F0] px-2.5 py-1 text-xs font-semibold text-[#F26522]">
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="#F26522"><path d="M0 0h24v24H0V0zm12.7 13.3L17 6h-2.3l-2.7 5-2.7-5H7l4.3 7.3V18h1.4v-4.7z"/></svg>
+				<span class="inline-flex items-center gap-1 rounded-full border border-[#F26522]/20 bg-[#FFF6F0] px-2 py-0.5 text-[10px] font-semibold text-[#F26522]">
+					<svg width="11" height="11" viewBox="0 0 24 24" fill="#F26522"><path d="M0 0h24v24H0V0zm12.7 13.3L17 6h-2.3l-2.7 5-2.7-5H7l4.3 7.3V18h1.4v-4.7z"/></svg>
 					P26
 				</span>
+			</p>
 		</div>
 	</footer>
 </div>

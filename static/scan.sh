@@ -106,6 +106,7 @@ TOTAL_COST=0
 UTIL_SCORE=0
 NODE_COUNT=0
 CATEGORIES_JSON="null"
+HIST_CPU_JSON=""
 
 declare -A HIST_CPU HIST_MEM
 for b in "0-10" "10-20" "20-30" "30-40" "40-50" "50-60" "60-70" "70-80" "80-90" "90-100"; do
@@ -282,7 +283,12 @@ if [ "$MODE" = "slurm" ]; then
             cw = (1 - used/alloc) * 100
             if (cw < 0) cw = 0; if (cw > 100) cw = 100
             track_n++; track_ch += ch; track_w += cw * ch
-            printf "JOB_WASTE %.1f %.2f\n", cw, ch
+
+            # Accumulate histogram in awk (avoids 360k bash subprocess forks)
+            bucket = int(cw / 10) * 10
+            if (bucket >= 100) bucket = 90
+            bkey = bucket "-" (bucket + 10)
+            hist[bkey] += ch
         }
 
         # GPU detection from AllocTRES (POSIX-compatible, no gawk extensions)
@@ -318,6 +324,17 @@ if [ "$MODE" = "slurm" ]; then
             notrack_n+0, notrack_ch+0, \
             fail_n+0, fail_ch+0, \
             gpu_n+0, gpu_h+0, fail_pct, mem_n+0
+
+        # Output histogram as JSON
+        printf "HIST {"
+        first = 1
+        for (b = 0; b < 100; b += 10) {
+            bkey = b "-" (b + 10)
+            if (!first) printf ","
+            printf "\"%s\":%.2f", bkey, hist[bkey]+0
+            first = 0
+        }
+        printf "}\n"
     }' "$SACCT_TMP" > "$AWK_OUT" &
     AWK_PID=$!
 
@@ -398,15 +415,11 @@ if [ "$MODE" = "slurm" ]; then
         lj=($2>1)?log($2)/log(10):0; printf "%.2f",$1*(lj/4<1?lj/4:1)
     }')
 
-    # Build core-hour weighted histogram (float accumulation via awk)
-    while IFS= read -r line; do
-        cpu_w=$(echo "$line" | awk '{print $2}')
-        ch_val=$(echo "$line" | awk '{print $3}')
-        { [ -z "$cpu_w" ] || [ -z "$ch_val" ]; } && continue
-        b=$(bucket_for "$cpu_w")
-        [ -z "$b" ] && continue
-        HIST_CPU["$b"]=$(echo "${HIST_CPU[$b]:-0} ${ch_val}" | awk '{printf "%.2f", $1 + $2}')
-    done <<< "$(echo "$RESULT" | grep "^JOB_WASTE")"
+    # Extract histogram from awk output (built inline, no bash loop needed)
+    HIST_LINE=$(echo "$RESULT" | grep "^HIST ")
+    if [ -n "$HIST_LINE" ]; then
+        HIST_CPU_JSON=$(echo "$HIST_LINE" | sed 's/^HIST //')
+    fi
 fi
 
 #
@@ -750,7 +763,8 @@ hist_json() {
     echo "$json}"
 }
 
-HIST_CPU_JSON=$(hist_json HIST_CPU)
+# SLURM sets HIST_CPU_JSON from awk output. K8s uses the bash array.
+[ -z "$HIST_CPU_JSON" ] && HIST_CPU_JSON=$(hist_json HIST_CPU)
 HIST_MEM_JSON=$(hist_json HIST_MEM)
 
 progress_bar() {
