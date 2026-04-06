@@ -18,7 +18,7 @@ export const GET: RequestHandler = async () => {
 		const stats = result.rows[0];
 
 		return json(stats, {
-			headers: { 'Cache-Control': 'public, max-age=30' }
+			headers: { 'Cache-Control': 'public, max-age=30', 'Access-Control-Allow-Origin': 'https://expanse.sh' }
 		});
 	} catch (err) {
 		console.error('Stats error:', err);
