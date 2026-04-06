@@ -402,8 +402,10 @@ if [ "$MODE" = "slurm" ]; then
     while IFS= read -r line; do
         cpu_w=$(echo "$line" | awk '{print $2}')
         ch_val=$(echo "$line" | awk '{print $3}')
+        { [ -z "$cpu_w" ] || [ -z "$ch_val" ]; } && continue
         b=$(bucket_for "$cpu_w")
-        HIST_CPU[$b]=$(echo "${HIST_CPU[$b]} $ch_val" | awk '{printf "%.2f", $1 + $2}')
+        [ -z "$b" ] && continue
+        HIST_CPU["$b"]=$(echo "${HIST_CPU[$b]:-0} ${ch_val}" | awk '{printf "%.2f", $1 + $2}')
     done <<< "$(echo "$RESULT" | grep "^JOB_WASTE")"
 fi
 
@@ -636,9 +638,9 @@ if [ "$MODE" = "kubernetes" ]; then
             SUM_MEM_WASTE=$(echo "$SUM_MEM_WASTE $mem_waste" | awk '{printf "%.2f", $1+$2}')
 
             b=$(bucket_for "$cpu_waste")
-            HIST_CPU[$b]=$(( ${HIST_CPU[$b]} + 1 ))
+            [ -n "$b" ] && HIST_CPU["$b"]=$(( ${HIST_CPU[$b]:-0} + 1 ))
             b=$(bucket_for "$mem_waste")
-            HIST_MEM[$b]=$(( ${HIST_MEM[$b]} + 1 ))
+            [ -n "$b" ] && HIST_MEM["$b"]=$(( ${HIST_MEM[$b]:-0} + 1 ))
 
             # Categories
             CAT_PODS[$category]=$(( ${CAT_PODS[$category]:-0} + 1 ))
