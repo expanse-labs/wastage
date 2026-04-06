@@ -338,16 +338,16 @@
 						<li>Live CPU, memory, and GPU utilisation per job</li>
 						<li>Per-job, per-user waste breakdown</li>
 						<li>GPU core and memory waste tracking</li>
-						<li>API access for your own dashboards</li>
+						<li>API integration for your existing tools</li>
 					</ul>
 				</div>
 				<div>
 					<p class="text-xs font-semibold uppercase text-muted">Pro</p>
 					<ul class="mt-2 space-y-1 text-sm text-foreground">
 						<li>Resource prediction before you submit</li>
-						<li>Failure root-cause analysis</li>
+						<li>Failure root-cause analysis suggestions</li>
 						<li>Optimisation suggestions per job</li>
-						<li>Natural language knowledge base</li>
+						<li>Query your cluster with natural language</li>
 					</ul>
 				</div>
 			</div>

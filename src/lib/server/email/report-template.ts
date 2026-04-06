@@ -138,7 +138,7 @@ export function renderReportEmail(report: Report, reportUrl: string): { html: st
                     </p>
                     <p style="margin:0 0 16px; font-size:14px; color:#73726D; line-height:1.6;">
                       Install Expanse on your cluster (free) for live CPU, memory, and GPU utilisation per job,
-                      per-user waste breakdown, and API access for your own dashboards.
+                      per-user waste breakdown, and API integration for your existing tools.
                     </p>
                     <a href="https://app.expanse.sh" style="display:inline-block; padding:10px 24px; background-color:#141413; color:#FAF9F5; font-size:13px; font-weight:600; text-decoration:none; border-radius:6px;">
                       Get Started Free →

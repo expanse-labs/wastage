@@ -876,7 +876,7 @@ if [ "$JSON_OUTPUT" = "false" ]; then
     printf "  ║  • %-52s║\n" "Per-job, per-user waste breakdown"
     printf "  ║  • %-52s║\n" "GPU core & memory waste tracking"
     printf "  ║  • %-52s║\n" "Historical trends and continuous monitoring"
-    printf "  ║  • %-52s║\n" "API access for your own dashboards"
+    printf "  ║  • %-52s║\n" "API integration for your existing tools"
     echo -e "  $BLANK"
     printf "  ║  ${GREEN}${BOLD}%-54s${NC}║\n" "Get started → app.expanse.sh"
     echo -e "  $BLANK"
