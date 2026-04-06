@@ -681,6 +681,25 @@ if [ "$MODE" = "kubernetes" ]; then
         MEM_RELIABLE=false
     fi
 
+    # GPU detection BEFORE cost calculation (need GPU_CPU_WEIGHT to exclude GPU pods from CPU cost)
+    GPU_DATA=$(kubectl get pods $NS_FLAG -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[*].resources.requests.nvidia\.com/gpu}{"\n"}{end}' 2>/dev/null)
+    GPU_JOBS=0
+    GPU_HOURS=0
+    GPU_CPU_WEIGHT=0
+    if [ -n "$GPU_DATA" ]; then
+        GPU_JOBS=$(echo "$GPU_DATA" | awk -F'\t' '$2+0 > 0 {n++} END{print n+0}')
+        GPU_TOTAL=$(echo "$GPU_DATA" | awk -F'\t' '$2+0 > 0 {g+=$2} END{print g+0}')
+        GPU_HOURS=$(echo "$GPU_TOTAL" | awk '{printf "%.1f", $1 * 730}')
+
+        GPU_POD_NAMES=$(echo "$GPU_DATA" | awk -F'\t' '$2+0 > 0 {print $1}')
+        GPU_CPU_WEIGHT=$(echo "$POD_REQUESTS" | awk -F'\t' -v gpus="$GPU_POD_NAMES" '
+            BEGIN { split(gpus, g, "\n"); for (i in g) gpu_pods[g[i]]=1 }
+            { if ($2 in gpu_pods) { gsub(/[^0-9]/, "", $3); w += $3+0 } }
+            END { print w+0 }
+        ')
+    fi
+
+    # Cost calculation (GPU pods excluded from CPU cost)
     TOTAL_NODE_COST_MONTHLY=0
     if [ -n "$NODE_JSON" ]; then
         NODE_INSTANCES=$(echo "$NODE_JSON" | awk -F'"' '/"node.kubernetes.io\/instance-type"/{print $4}' 2>/dev/null)
@@ -696,9 +715,7 @@ if [ "$MODE" = "kubernetes" ]; then
     if [ "$TOTAL_NODE_COST_MONTHLY" != "0" ]; then
         TOTAL_COST=$(echo "$TOTAL_NODE_COST_MONTHLY $AVG_CPU_WASTE" | awk '{printf "%.2f", $1 * ($2/100)}')
     else
-        # Estimate monthly CPU cost from non-GPU pod requests only
-        # GPU pods are costed separately (we can't measure GPU utilisation)
-        NON_GPU_CPU_WEIGHT=$(echo "$TOTAL_CPU_WEIGHT ${GPU_CPU_WEIGHT:-0}" | awk '{printf "%.2f", $1 - $2}')
+        NON_GPU_CPU_WEIGHT=$(echo "${TOTAL_CPU_WEIGHT:-0} ${GPU_CPU_WEIGHT:-0}" | awk '{printf "%.2f", $1 - $2}')
         TOTAL_COST=$(echo "$NON_GPU_CPU_WEIGHT $AVG_CPU_WASTE" | awk '{
             cores = $1 / 1000
             monthly_cost = cores * 730 * 0.10
@@ -717,25 +734,6 @@ if [ "$MODE" = "kubernetes" ]; then
         CATEGORIES_JSON="$CATEGORIES_JSON\"$cat\":{\"pod_count\":$count,\"cpu_waste\":$avg_cpu,\"mem_waste\":$avg_mem,\"cost\":$cat_cost}"
     done
     CATEGORIES_JSON="$CATEGORIES_JSON}"
-
-    # GPU detection from pod resource requests
-    GPU_DATA=$(kubectl get pods $NS_FLAG -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[*].resources.requests.nvidia\.com/gpu}{"\n"}{end}' 2>/dev/null)
-    GPU_JOBS=0
-    GPU_HOURS=0
-    GPU_CPU_WEIGHT=0
-    if [ -n "$GPU_DATA" ]; then
-        GPU_JOBS=$(echo "$GPU_DATA" | awk -F'\t' '$2+0 > 0 {n++} END{print n+0}')
-        GPU_TOTAL=$(echo "$GPU_DATA" | awk -F'\t' '$2+0 > 0 {g+=$2} END{print g+0}')
-        GPU_HOURS=$(echo "$GPU_TOTAL" | awk '{printf "%.1f", $1 * 730}')
-
-        # Track CPU weight of GPU pods (to exclude from CPU-only cost)
-        GPU_POD_NAMES=$(echo "$GPU_DATA" | awk -F'\t' '$2+0 > 0 {print $1}')
-        GPU_CPU_WEIGHT=$(echo "$POD_REQUESTS" | awk -F'\t' -v gpus="$GPU_POD_NAMES" '
-            BEGIN { split(gpus, g, "\n"); for (i in g) gpu_pods[g[i]]=1 }
-            { if ($2 in gpu_pods) { gsub(/[^0-9]/, "", $3); w += $3+0 } }
-            END { print w+0 }
-        ')
-    fi
 
     rm -rf "$TMPDIR_METRICS"
 
