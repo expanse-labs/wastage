@@ -743,8 +743,12 @@ if [ "$MODE" = "kubernetes" ]; then
     CPU_PARTIAL=false
 
     CPU_UTIL=$(echo "$AVG_CPU_WASTE" | awk '{printf "%.2f",100-$1}')
-    MEM_UTIL=$(echo "$AVG_MEM_WASTE" | awk '{printf "%.2f",100-$1}')
-    UTIL_SCORE=$(echo "$CPU_UTIL $MEM_UTIL" | awk '{printf "%.1f",0.6*$1+0.4*$2}')
+    if [ "$MEM_RELIABLE" = "true" ] && [ "$AVG_MEM_WASTE" != "-1" ]; then
+        MEM_UTIL=$(echo "$AVG_MEM_WASTE" | awk '{printf "%.2f",100-$1}')
+        UTIL_SCORE=$(echo "$CPU_UTIL $MEM_UTIL" | awk '{printf "%.1f",0.6*$1+0.4*$2}')
+    else
+        UTIL_SCORE="$CPU_UTIL"
+    fi
 
     RANKING_SCORE=$(echo "$UTIL_SCORE $TOTAL_JOBS" | awk '{
         lj=($2>1)?log($2)/log(10):0; printf "%.2f",$1*(lj/4<1?lj/4:1)

@@ -28,7 +28,8 @@ function wasteBar(pct: number): string {
 export function renderReportEmail(report: Report, reportUrl: string): { html: string; text: string } {
 	const score = report.utilisation_score ?? 0;
 	const cpuWaste = report.avg_cpu_waste_pct ?? 0;
-	const memWaste = report.avg_mem_waste_pct ?? 0;
+	const memWaste = report.avg_mem_waste_pct;
+	const memAvailable = memWaste != null;
 	const cost = report.total_estimated_cost_usd ?? 0;
 	const colour = scoreColour(score);
 	const scheduler = report.scheduler_type === 'slurm' ? 'SLURM' : 'Kubernetes';
@@ -91,9 +92,9 @@ export function renderReportEmail(report: Report, reportUrl: string): { html: st
                   </td>
                   <td width="33%" style="text-align:center; padding:20px 12px; background-color:#FFFFFF; border:1px solid #E8E6DD; border-radius:12px;">
                     <p style="margin:0 0 4px; font-size:24px; font-weight:700; color:#141413; font-family:'JetBrains Mono',monospace;">
-                      ${memWaste.toFixed(0)}%
+                      ${memAvailable ? `${memWaste.toFixed(0)}%` : 'N/A'}
                     </p>
-                    <p style="margin:0; font-size:12px; color:#73726D;">memory waste</p>
+                    <p style="margin:0; font-size:12px; color:#73726D;">${memAvailable ? 'memory waste' : 'memory (limited tracking)'}</p>
                   </td>
                 </tr>
               </table>
@@ -174,7 +175,7 @@ Utilisation Score: ${score.toFixed(0)}/100
 ${report.cluster_name || 'Anonymous cluster'} · ${scheduler} · ${report.job_count.toLocaleString()} ${jobLabel} analysed
 
 CPU Waste:    ${cpuWaste.toFixed(0)}%  ${wasteBar(cpuWaste)}
-Memory Waste: ${memWaste.toFixed(0)}%  ${wasteBar(memWaste)}
+Memory Waste: ${memAvailable ? `${memWaste.toFixed(0)}%  ${wasteBar(memWaste)}` : 'N/A (sacct tracking limited)'}
 ${report.gpu_jobs > 0 ? `GPU Jobs:     ${report.gpu_jobs} (${report.gpu_hours.toFixed(0)} GPU-hours)\n` : ''}
 Estimated Waste: ${formatCurrency(cost)}
 ${report.failed_jobs > 0 ? `Failed: ${report.failed_job_pct?.toFixed(0)}% of ${jobLabel} (${report.failed_core_pct?.toFixed(0)}% of compute)\n` : ''}
