@@ -11,7 +11,7 @@ export const GET: RequestHandler = async () => {
 				COALESCE(SUM(total_estimated_cost_usd), 0)::float AS total_waste_usd,
 				COALESCE(SUM(total_core_hours), 0)::float AS total_core_hours,
 				COALESCE(SUM(wasted_core_hours), 0)::float AS total_wasted_core_hours,
-				COUNT(*)::int AS cluster_count
+				COUNT(*) FILTER (WHERE report_type = 'cluster' OR report_type IS NULL)::int AS cluster_count
 			FROM reports
 		`);
 

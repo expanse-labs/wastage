@@ -50,7 +50,7 @@ export const ingestSchema = z.object({
 	failed_core_pct: z.number().min(0).max(100).optional().default(0),
 	categories: categorySchema.nullable().optional(),
 	report_type: z.enum(['cluster', 'user']).optional().default('cluster'),
-	username: z.string().max(50).nullable().optional()
+	username: z.string().max(50).regex(/^[a-zA-Z0-9 \-_.]*$/).nullable().optional()
 });
 
 export type IngestPayload = z.infer<typeof ingestSchema>;

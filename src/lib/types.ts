@@ -49,7 +49,7 @@ export interface GlobalStats {
 
 /** A single row on the utilisation leaderboard (cluster or user). */
 export interface LeaderboardEntry {
-	cluster_name: string;
+	cluster_name: string | null;
 	username: string | null;
 	report_type: 'cluster' | 'user';
 	utilisation_score: number;
