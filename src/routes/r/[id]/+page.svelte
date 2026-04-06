@@ -372,8 +372,8 @@
 			{#if emailStatus === 'success'}
 				<p class="text-center text-success font-medium">You're on the list. Welcome.</p>
 			{:else}
-				<p class="text-sm font-medium text-foreground">Join the Expanse mailing list</p>
-				<p class="mt-1 text-xs text-muted">HPC insights, waste analysis tips, and product updates. No spam.</p>
+				<p class="text-sm font-medium text-foreground">Get this report as a PDF</p>
+				<p class="mt-1 text-xs text-muted">Enter your email to receive this report and stay updated with the Expanse newsletter.</p>
 				<div class="mt-3 flex gap-3">
 					<input
 						type="email"
