@@ -102,6 +102,7 @@ AVG_GPU_CORE_WASTE=""
 AVG_GPU_MEM_WASTE=""
 GPU_JOBS=0
 GPU_HOURS=0
+GPU_TOTAL=0
 TOTAL_COST=0
 UTIL_SCORE=0
 NODE_COUNT=0
@@ -680,11 +681,36 @@ if [ "$MODE" = "kubernetes" ]; then
         MEM_RELIABLE=false
     fi
 
+    # GPU detection BEFORE cost calculation (need GPU_CPU_WEIGHT to exclude GPU pods from CPU cost)
+    # GPU detection with namespace-qualified pod names
+    GPU_DATA=$(kubectl get pods $NS_FLAG -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\t"}{.spec.containers[*].resources.requests.nvidia\.com/gpu}{"\n"}{end}' 2>/dev/null)
+    GPU_JOBS=0
+    GPU_HOURS=0
+    GPU_CPU_WEIGHT=0
+    HAS_GPU_PODS=false
+    if [ -n "$GPU_DATA" ]; then
+        GPU_JOBS=$(echo "$GPU_DATA" | awk -F'\t' '$2+0 > 0 {n++} END{print n+0}')
+        GPU_TOTAL=$(echo "$GPU_DATA" | awk -F'\t' '$2+0 > 0 {g+=$2} END{print g+0}')
+        GPU_HOURS=$(echo "$GPU_TOTAL" | awk '{printf "%.1f", $1 * 730}')
+        [ "$GPU_JOBS" -gt 0 ] && HAS_GPU_PODS=true
+
+        # Match GPU pods by namespace/name key (same format as POD_REQUESTS)
+        GPU_POD_KEYS=$(echo "$GPU_DATA" | awk -F'\t' '$2+0 > 0 {print $1}')
+        GPU_CPU_WEIGHT=$(echo "$POD_REQUESTS" | awk -F'\t' -v gpus="$GPU_POD_KEYS" '
+            BEGIN { split(gpus, g, "\n"); for (i in g) gpu_pods[g[i]]=1 }
+            { key = $1 "/" $2; if (key in gpu_pods) { gsub(/[^0-9]/, "", $3); w += $3+0 } }
+            END { print w+0 }
+        ')
+    fi
+
+    # Cost calculation (GPU nodes and GPU pods excluded)
     TOTAL_NODE_COST_MONTHLY=0
     if [ -n "$NODE_JSON" ]; then
         NODE_INSTANCES=$(echo "$NODE_JSON" | awk -F'"' '/"node.kubernetes.io\/instance-type"/{print $4}' 2>/dev/null)
         while read -r itype; do
             [ -z "$itype" ] && continue
+            # Skip GPU instance types (p3, p4, p5, g4, g5, g6, a2, a3)
+            case "$itype" in p3*|p4*|p5*|g4*|g5*|g6*|a2*|a3*) continue ;; esac
             price=$(get_instance_price "$itype")
             if [ -n "$price" ]; then
                 TOTAL_NODE_COST_MONTHLY=$(echo "$TOTAL_NODE_COST_MONTHLY $price" | awk '{printf "%.2f", $1 + ($2 * 730)}')
@@ -695,9 +721,8 @@ if [ "$MODE" = "kubernetes" ]; then
     if [ "$TOTAL_NODE_COST_MONTHLY" != "0" ]; then
         TOTAL_COST=$(echo "$TOTAL_NODE_COST_MONTHLY $AVG_CPU_WASTE" | awk '{printf "%.2f", $1 * ($2/100)}')
     else
-        # No node access: estimate monthly cost from pod CPU requests
-        # total_requested_cores × 730 hrs/month × $0.10/core-hr × waste%
-        TOTAL_COST=$(echo "$TOTAL_CPU_WEIGHT $AVG_CPU_WASTE" | awk '{
+        NON_GPU_CPU_WEIGHT=$(echo "${TOTAL_CPU_WEIGHT:-0} ${GPU_CPU_WEIGHT:-0}" | awk '{printf "%.2f", $1 - $2}')
+        TOTAL_COST=$(echo "$NON_GPU_CPU_WEIGHT $AVG_CPU_WASTE" | awk '{
             cores = $1 / 1000
             monthly_cost = cores * 730 * 0.10
             printf "%.2f", monthly_cost * ($2 / 100)
@@ -715,17 +740,6 @@ if [ "$MODE" = "kubernetes" ]; then
         CATEGORIES_JSON="$CATEGORIES_JSON\"$cat\":{\"pod_count\":$count,\"cpu_waste\":$avg_cpu,\"mem_waste\":$avg_mem,\"cost\":$cat_cost}"
     done
     CATEGORIES_JSON="$CATEGORIES_JSON}"
-
-    # GPU detection from pod resource requests
-    GPU_DATA=$(kubectl get pods $NS_FLAG -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[*].resources.requests.nvidia\.com/gpu}{"\n"}{end}' 2>/dev/null)
-    GPU_JOBS=0
-    GPU_HOURS=0
-    if [ -n "$GPU_DATA" ]; then
-        GPU_JOBS=$(echo "$GPU_DATA" | awk -F'\t' '$2+0 > 0 {n++} END{print n+0}')
-        GPU_TOTAL=$(echo "$GPU_DATA" | awk -F'\t' '$2+0 > 0 {g+=$2} END{print g+0}')
-        # Estimate GPU-hours from running pods (assume running for sample window)
-        GPU_HOURS=$(echo "$GPU_TOTAL" | awk '{printf "%.1f", $1 * 730}')  # monthly estimate
-    fi
 
     rm -rf "$TMPDIR_METRICS"
 
@@ -831,7 +845,15 @@ if [ "$JSON_OUTPUT" = "false" ]; then
     fi
 
     if [ "$GPU_JOBS" -gt 0 ]; then
-        printf "  ║  GPU Jobs:           %-32s║\n" "$GPU_JOBS  ($(echo $GPU_HOURS | awk '{printf "%d", $1}') GPU-hours)"
+        printf "  ║  GPU Pods:           %-32s║\n" "$GPU_JOBS  ($(echo $GPU_HOURS | awk '{printf "%d", $1}') GPU-hrs/month)"
+        # Show total GPU spend at default A100 rate ($3/hr)
+        GPU_MONTHLY_COST=$(echo "$GPU_TOTAL $GPU_COST_PER_HOUR" | awk '{printf "%.0f", ($1+0) * 730 * ($2+0)}')
+        if [ "${GPU_MONTHLY_COST:-0}" -gt 0 ] 2>/dev/null; then
+            printf "  ║  GPU Spend:          %-32s║\n" "~\$${GPU_MONTHLY_COST}/month (utilisation unknown)"
+        fi
+        if [ "$MODE" = "kubernetes" ]; then
+            printf "  ║  ${DIM}%-54s${NC}║\n" "Expanse tracks GPU utilisation per pod (free)."
+        fi
     fi
     echo -e "  $BLANK"
 
