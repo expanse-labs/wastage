@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import pool from '$lib/server/db.js';
 import { generateReportId } from '$lib/server/id.js';
 import { checkRateLimit, extractIp } from '$lib/server/rate-limit.js';
-import { ingestSchema, validateHistogram } from '$lib/validation.js';
+import { ingestSchema } from '$lib/validation.js';
 import { sendReportEmail } from '$lib/server/email/send-report.js';
 import { createHash } from 'crypto';
 import { env } from '$env/dynamic/private';
@@ -43,13 +43,6 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	const data = result.data;
-
-	if (!validateHistogram(data.histogram_cpu, data.avg_cpu_waste_pct)) {
-		return json({ error: 'CPU histogram inconsistent with reported averages' }, { status: 400 });
-	}
-	if (!validateHistogram(data.histogram_mem, data.avg_mem_waste_pct)) {
-		return json({ error: 'Memory histogram inconsistent with reported averages' }, { status: 400 });
-	}
 
 	const id = generateReportId();
 	const jobCount = data.job_count;
