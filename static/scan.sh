@@ -402,7 +402,7 @@ if [ "$MODE" = "slurm" ]; then
     while IFS= read -r line; do
         cpu_w=$(echo "$line" | awk '{print $2}')
         ch_val=$(echo "$line" | awk '{print $3}')
-        [ -z "$cpu_w" ] || [ -z "$ch_val" ] && continue
+        { [ -z "$cpu_w" ] || [ -z "$ch_val" ]; } && continue
         b=$(bucket_for "$cpu_w")
         [ -z "$b" ] && continue
         HIST_CPU["$b"]=$(echo "${HIST_CPU[$b]:-0} ${ch_val}" | awk '{printf "%.2f", $1 + $2}')
