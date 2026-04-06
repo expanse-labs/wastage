@@ -26,7 +26,7 @@ spec:
         - name: depot-registry
       containers:
         - name: wastage
-          image: registry.depot.dev/h04kh3b12g:wastage-21ccfa3
+          image: registry.depot.dev/h04kh3b12g:wastage-9880374
           ports:
             - containerPort: 3000
           env:
