@@ -6,7 +6,7 @@ export interface Report {
 	job_count: number;
 	node_count: number;
 	avg_cpu_waste_pct: number;
-	avg_mem_waste_pct: number;
+	avg_mem_waste_pct: number | null;
 	avg_gpu_core_waste_pct: number | null;
 	avg_gpu_mem_waste_pct: number | null;
 	gpu_jobs: number;

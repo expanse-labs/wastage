@@ -395,7 +395,7 @@ if [ "$MODE" = "slurm" ]; then
     if [ "$(echo "$AVG_MEM_WASTE" | awk '{print ($1 > 90)}')" = "1" ]; then
         # >90% memory waste mostly means MaxRSS is batch overhead only
         MEM_RELIABLE=false
-        AVG_MEM_WASTE=0
+        AVG_MEM_WASTE=-1
     fi
 
     CPU_UTIL=$(echo "$AVG_CPU_WASTE" | awk '{printf "%.2f",100-$1}')
@@ -674,7 +674,7 @@ if [ "$MODE" = "kubernetes" ]; then
         # Report pod count but mark waste as unmeasurable.
         info "  $TOTAL_JOBS running pods found (requests only, no usage data)."
         AVG_CPU_WASTE=0
-        AVG_MEM_WASTE=0
+        AVG_MEM_WASTE=-1
         MEM_RELIABLE=false
     fi
 
@@ -934,7 +934,7 @@ PAYLOAD=$(cat <<JSONEOF
   "job_count": $TOTAL_JOBS,
   "node_count": $NODE_COUNT,
   "avg_cpu_waste_pct": $AVG_CPU_WASTE,
-  "avg_mem_waste_pct": $AVG_MEM_WASTE,
+  "avg_mem_waste_pct": $([ "$AVG_MEM_WASTE" = "-1" ] && echo "null" || echo "$AVG_MEM_WASTE"),
   "avg_gpu_core_waste_pct": ${AVG_GPU_CORE_WASTE:-null},
   "avg_gpu_mem_waste_pct": ${AVG_GPU_MEM_WASTE:-null},
   "gpu_jobs": $GPU_JOBS,

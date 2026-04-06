@@ -221,6 +221,7 @@
 						<div class="h-2 rounded-full {wasteColor(r.avg_cpu_waste_pct)}" style="width: {100 - r.avg_cpu_waste_pct}%"></div>
 					</div>
 				</div>
+				{#if r.avg_mem_waste_pct != null}
 				<div>
 					<div class="flex items-center justify-between text-sm">
 						<span class="text-muted">Memory</span>
@@ -230,6 +231,18 @@
 						<div class="h-2 rounded-full {wasteColor(r.avg_mem_waste_pct)}" style="width: {100 - r.avg_mem_waste_pct}%"></div>
 					</div>
 				</div>
+				{:else}
+				<div>
+					<div class="flex items-center justify-between text-sm">
+						<span class="text-muted">Memory</span>
+						<span class="text-sm text-faint">N/A</span>
+					</div>
+					<p class="mt-1 text-xs text-faint">
+						{r.scheduler_type === 'slurm' ? 'sacct memory tracking is limited on this cluster. MaxRSS only captures batch script overhead, not actual job memory.' : 'Memory metrics unavailable.'}
+						<a href="https://app.expanse.sh" class="text-foreground underline">Expanse tracks per-node memory via cgroups (free) →</a>
+					</p>
+				</div>
+				{/if}
 				{#if r.avg_gpu_core_waste_pct != null}
 					<div>
 						<div class="flex items-center justify-between text-sm">
