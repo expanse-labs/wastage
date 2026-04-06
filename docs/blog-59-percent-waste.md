@@ -16,7 +16,7 @@ I built an open-source tool that tracks SLURM job wastage, and ran it on two UK 
 curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh
 ```
 
-It processes `sacct` data locally on your machine, computes CPU waste from allocated vs actually used resources, and returns a shareable URL with your results. No raw job data leaves your cluster. The server only aggregates anonymised telemetry for a nice leaderboard to track the most efficient clusters globally.
+It processes `sacct` data locally on your cluster, computes CPU waste from allocated vs actually used resources, and returns a shareable URL with your results. No raw job data leaves your cluster. The server only aggregates anonymised telemetry for a nice leaderboard to track the most efficient clusters globally.
 
 I tested it on two production supercomputers. The results were... educational.
 
