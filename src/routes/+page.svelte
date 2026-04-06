@@ -33,13 +33,17 @@
 </script>
 
 <svelte:head>
-	<title>wastage.expanse.sh — How much compute is your cluster wasting?</title>
+	<title>wastage.expanse.sh | How much compute is your cluster wasting?</title>
 	<meta name="description" content="One command to see how much compute your cluster wastes. Works on SLURM and Kubernetes." />
-	<meta property="og:title" content="wastage.expanse.sh — Compute Waste Analysis" />
-	<meta property="og:description" content="One command. 30 seconds. See exactly where resources go to waste." />
+	<meta property="og:title" content="How much compute is your cluster wasting?" />
+	<meta property="og:description" content="One command. 30 seconds. See exactly where resources go to waste. Works on SLURM and Kubernetes." />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content="https://wastage.expanse.sh" />
+	<meta property="og:image" content="https://wastage.expanse.sh/og-landing.png" />
 	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="How much compute is your cluster wasting?" />
+	<meta name="twitter:description" content="One command. 30 seconds. See exactly where resources go to waste." />
+	<meta name="twitter:image" content="https://wastage.expanse.sh/og-landing.png" />
 </svelte:head>
 
 <div class="min-h-screen bg-surface">

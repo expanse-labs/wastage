@@ -75,9 +75,9 @@
 </script>
 
 <svelte:head>
-	<title>Waste Report — {r.utilisation_score.toFixed(0)}/100 | wastage.expanse.sh</title>
+	<title>Waste Report | {r.utilisation_score.toFixed(0)}/100 | wastage.expanse.sh</title>
 	<meta name="description" content="Analyzed {r.job_count} {r.scheduler_type === 'slurm' ? 'jobs' : 'pods'}. Estimated ${r.total_estimated_cost_usd.toLocaleString()} wasted." />
-	<meta property="og:title" content="Compute Waste Report — {r.utilisation_score.toFixed(0)}% Efficiency" />
+	<meta property="og:title" content="Compute Waste Report | {r.utilisation_score.toFixed(0)}% Efficiency" />
 	<meta property="og:description" content="Analyzed {r.job_count} {r.scheduler_type === 'slurm' ? 'jobs' : 'pods'}. Estimated ${r.total_estimated_cost_usd.toLocaleString()} wasted." />
 	<meta property="og:image" content="https://wastage.expanse.sh/api/og/{r.id}" />
 	<meta property="og:type" content="website" />
