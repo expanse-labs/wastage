@@ -392,8 +392,10 @@ if [ "$MODE" = "slurm" ]; then
     # compute process memory (MPI ranks, srun steps). The number is unreliable.
     # We report it with a caveat, or skip it if it looks like batch overhead.
     MEM_RELIABLE=true
-    if [ "$(echo "$AVG_MEM_WASTE" | awk '{print ($1 > 90)}')" = "1" ]; then
-        # >90% memory waste mostly means MaxRSS is batch overhead only
+    if [ "${MEM_JOBS:-0}" -eq 0 ] 2>/dev/null; then
+        MEM_RELIABLE=false
+        AVG_MEM_WASTE=-1
+    elif [ "$(echo "$AVG_MEM_WASTE" | awk '{print ($1 > 90)}')" = "1" ]; then
         MEM_RELIABLE=false
         AVG_MEM_WASTE=-1
     fi
