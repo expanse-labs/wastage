@@ -6,16 +6,27 @@ let fontData: ArrayBuffer | null = null;
 
 async function getFont(): Promise<ArrayBuffer> {
 	if (fontData) return fontData;
-	const res = await fetch(
-		'https://fonts.gstatic.com/s/ibmplexsans/v19/zYXgKVElMYYaJe8bpLHnCwDKhdHeFaxOedc.woff2'
-	);
-	fontData = await res.arrayBuffer();
-	return fontData;
+	try {
+		const res = await fetch(
+			'https://fonts.gstatic.com/s/ibmplexsans/v19/zYXgKVElMYYaJe8bpLHnCwDKhdHeFaxOedc.woff2'
+		);
+		if (!res.ok) throw new Error(`Font fetch failed: ${res.status}`);
+		fontData = await res.arrayBuffer();
+		return fontData;
+	} catch (err) {
+		console.error('OG landing font error:', err);
+		throw err;
+	}
 }
 
 /** Static OG image for the landing page. Cached for 7 days. */
 export const GET: RequestHandler = async () => {
-	const font = await getFont();
+	let font: ArrayBuffer;
+	try {
+		font = await getFont();
+	} catch {
+		return new Response('Font unavailable', { status: 500 });
+	}
 
 	const svg = await satori(
 		{
@@ -80,8 +91,8 @@ export const GET: RequestHandler = async () => {
 								{
 									type: 'div',
 									props: {
-										style: { color: '#FFFFFF', fontSize: '20px', fontFamily: 'monospace' },
-										children: 'curl -s wastage.expanse.sh/scan -o scan.sh && bash scan.sh'
+										style: { color: '#FFFFFF', fontSize: '18px', fontFamily: 'IBM Plex Sans' },
+										children: 'curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh'
 									}
 								}
 							]
