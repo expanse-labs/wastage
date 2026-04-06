@@ -695,9 +695,10 @@ if [ "$MODE" = "kubernetes" ]; then
     if [ "$TOTAL_NODE_COST_MONTHLY" != "0" ]; then
         TOTAL_COST=$(echo "$TOTAL_NODE_COST_MONTHLY $AVG_CPU_WASTE" | awk '{printf "%.2f", $1 * ($2/100)}')
     else
-        # No node access: estimate monthly cost from pod CPU requests
-        # total_requested_cores × 730 hrs/month × $0.10/core-hr × waste%
-        TOTAL_COST=$(echo "$TOTAL_CPU_WEIGHT $AVG_CPU_WASTE" | awk '{
+        # Estimate monthly CPU cost from non-GPU pod requests only
+        # GPU pods are costed separately (we can't measure GPU utilisation)
+        NON_GPU_CPU_WEIGHT=$(echo "$TOTAL_CPU_WEIGHT ${GPU_CPU_WEIGHT:-0}" | awk '{printf "%.2f", $1 - $2}')
+        TOTAL_COST=$(echo "$NON_GPU_CPU_WEIGHT $AVG_CPU_WASTE" | awk '{
             cores = $1 / 1000
             monthly_cost = cores * 730 * 0.10
             printf "%.2f", monthly_cost * ($2 / 100)
@@ -720,11 +721,19 @@ if [ "$MODE" = "kubernetes" ]; then
     GPU_DATA=$(kubectl get pods $NS_FLAG -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[*].resources.requests.nvidia\.com/gpu}{"\n"}{end}' 2>/dev/null)
     GPU_JOBS=0
     GPU_HOURS=0
+    GPU_CPU_WEIGHT=0
     if [ -n "$GPU_DATA" ]; then
         GPU_JOBS=$(echo "$GPU_DATA" | awk -F'\t' '$2+0 > 0 {n++} END{print n+0}')
         GPU_TOTAL=$(echo "$GPU_DATA" | awk -F'\t' '$2+0 > 0 {g+=$2} END{print g+0}')
-        # Estimate GPU-hours from running pods (assume running for sample window)
-        GPU_HOURS=$(echo "$GPU_TOTAL" | awk '{printf "%.1f", $1 * 730}')  # monthly estimate
+        GPU_HOURS=$(echo "$GPU_TOTAL" | awk '{printf "%.1f", $1 * 730}')
+
+        # Track CPU weight of GPU pods (to exclude from CPU-only cost)
+        GPU_POD_NAMES=$(echo "$GPU_DATA" | awk -F'\t' '$2+0 > 0 {print $1}')
+        GPU_CPU_WEIGHT=$(echo "$POD_REQUESTS" | awk -F'\t' -v gpus="$GPU_POD_NAMES" '
+            BEGIN { split(gpus, g, "\n"); for (i in g) gpu_pods[g[i]]=1 }
+            { if ($2 in gpu_pods) { gsub(/[^0-9]/, "", $3); w += $3+0 } }
+            END { print w+0 }
+        ')
     fi
 
     rm -rf "$TMPDIR_METRICS"
@@ -831,7 +840,10 @@ if [ "$JSON_OUTPUT" = "false" ]; then
     fi
 
     if [ "$GPU_JOBS" -gt 0 ]; then
-        printf "  ║  GPU Jobs:           %-32s║\n" "$GPU_JOBS  ($(echo $GPU_HOURS | awk '{printf "%d", $1}') GPU-hours)"
+        printf "  ║  GPU Pods:           %-32s║\n" "$GPU_JOBS  ($(echo $GPU_HOURS | awk '{printf "%d", $1}') GPU-hrs allocated)"
+        if [ "$MODE" = "kubernetes" ]; then
+            printf "  ║  ${DIM}%-54s${NC}║\n" "GPU utilisation unknown. Expanse tracks this (free)."
+        fi
     fi
     echo -e "  $BLANK"
 
