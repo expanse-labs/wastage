@@ -160,6 +160,9 @@
 					${r.total_estimated_cost_usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}
 				</p>
 				<p class="mt-2 text-sm text-muted">estimated waste</p>
+				{#if r.cost_per_core_hour === 0.1}
+					<p class="mt-1 text-[10px] text-faint">at cloud rates ($0.10/core-hr)</p>
+				{/if}
 			</div>
 
 			<!-- Core-hours wasted -->
