@@ -26,7 +26,7 @@ export const load: PageServerLoad = async () => {
 		const clusterResult = await pool.query(
 			`SELECT cluster_name, username, report_type, utilisation_score, scheduler_type, country, job_count, ranking_score
 			 FROM reports
-			 WHERE show_on_leaderboard = true AND report_type = 'cluster' AND cluster_name IS NOT NULL
+			 WHERE show_on_leaderboard = true AND (report_type = 'cluster' OR report_type IS NULL) AND cluster_name IS NOT NULL
 			 ORDER BY ranking_score DESC
 			 LIMIT 10`
 		);
