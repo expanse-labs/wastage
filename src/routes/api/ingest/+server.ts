@@ -68,8 +68,9 @@ export const POST: RequestHandler = async ({ request }) => {
 				utilisation_score, ranking_score,
 				cluster_name, country, show_on_leaderboard, ip_hash,
 				histogram_cpu, histogram_mem, cost_per_core_hour, categories,
-				total_core_hours, wasted_core_hours, failed_jobs, failed_job_pct, failed_core_pct
-			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)`,
+				total_core_hours, wasted_core_hours, failed_jobs, failed_job_pct, failed_core_pct,
+				report_type, username
+			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28)`,
 			[
 				id,
 				data.scheduler_type,
@@ -96,7 +97,9 @@ export const POST: RequestHandler = async ({ request }) => {
 				data.wasted_core_hours,
 				data.failed_jobs,
 				data.failed_job_pct,
-				data.failed_core_pct
+				data.failed_core_pct,
+				data.report_type,
+				data.username ?? null
 			]
 		);
 
@@ -134,7 +137,9 @@ export const POST: RequestHandler = async ({ request }) => {
 					wasted_core_hours: data.wasted_core_hours ?? 0,
 					failed_jobs: data.failed_jobs ?? 0,
 					failed_job_pct: data.failed_job_pct ?? 0,
-					failed_core_pct: data.failed_core_pct ?? 0
+					failed_core_pct: data.failed_core_pct ?? 0,
+					report_type: data.report_type ?? 'cluster',
+					username: data.username ?? null
 				},
 				data.email
 			).catch(() => {});

@@ -30,7 +30,9 @@ export async function migrate() {
 			wasted_core_hours REAL DEFAULT 0,
 			failed_jobs INTEGER DEFAULT 0,
 			failed_job_pct REAL DEFAULT 0,
-			failed_core_pct REAL DEFAULT 0
+			failed_core_pct REAL DEFAULT 0,
+			report_type TEXT DEFAULT 'cluster',
+			username TEXT
 		);
 
 		CREATE TABLE IF NOT EXISTS email_captures (
@@ -46,5 +48,12 @@ export async function migrate() {
 			WHERE show_on_leaderboard = true;
 
 		CREATE INDEX IF NOT EXISTS idx_reports_created_at ON reports(created_at);
+
+		-- Add columns for existing tables (idempotent via IF NOT EXISTS pattern)
+		DO $$ BEGIN
+			ALTER TABLE reports ADD COLUMN IF NOT EXISTS report_type TEXT DEFAULT 'cluster';
+			ALTER TABLE reports ADD COLUMN IF NOT EXISTS username TEXT;
+		EXCEPTION WHEN others THEN NULL;
+		END $$;
 	`);
 }

@@ -116,9 +116,14 @@
 		{/if}
 
 		<!-- Title -->
-		<h1 class="text-2xl font-bold text-foreground md:text-3xl">Compute Waste Report</h1>
+		<h1 class="text-2xl font-bold text-foreground md:text-3xl">
+			Compute Waste Report
+			{#if r.report_type === 'user'}
+				<span class="ml-2 align-middle rounded-full bg-purple-100 px-2.5 py-0.5 text-sm font-medium text-purple-800">User</span>
+			{/if}
+		</h1>
 		<p class="mt-2 text-muted">
-			{r.cluster_name || 'Anonymous cluster'} ·
+			{r.report_type === 'user' && r.username ? r.username : (r.cluster_name || 'Anonymous cluster')} ·
 			<span class="rounded-full px-2 py-0.5 text-xs font-medium {r.scheduler_type === 'slurm' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">
 				{r.scheduler_type.toUpperCase()}
 			</span>

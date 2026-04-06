@@ -4,6 +4,8 @@
 	let { data }: { data: PageData } = $props();
 
 	let copied = $state(false);
+	let lbTab = $state<'clusters' | 'users'>('clusters');
+	const lbEntries = $derived(lbTab === 'clusters' ? data.clusterLeaderboard : data.userLeaderboard);
 
 	const CMD = 'curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh';
 
@@ -151,28 +153,48 @@
 	</section>
 
 	<!-- Leaderboard -->
-	{#if data.leaderboard.length > 0}
-		<section class="border-t border-subtle-border">
-			<div class="mx-auto max-w-[960px] px-6 py-16">
-				<h2 class="text-2xl font-bold text-foreground">Cluster Leaderboard</h2>
-				<p class="mt-2 text-muted">Top clusters by utilisation score. Opt-in only.</p>
+	<section class="border-t border-subtle-border">
+		<div class="mx-auto max-w-[960px] px-6 py-16">
+			<h2 class="text-2xl font-bold text-foreground">Leaderboard</h2>
+			<p class="mt-2 text-muted">Ranked by utilisation score. Opt-in only.</p>
 
-				<div class="mt-6 overflow-x-auto rounded-xl border border-subtle-border bg-card">
+			<!-- Tabs -->
+			<div class="mt-6 flex gap-1 rounded-lg bg-elevated p-1 w-fit">
+				<button
+					onclick={() => lbTab = 'clusters'}
+					class="rounded-md px-4 py-2 text-sm font-medium transition-colors {lbTab === 'clusters' ? 'bg-card text-foreground shadow-sm' : 'text-muted hover:text-foreground'}"
+				>
+					Clusters
+				</button>
+				<button
+					onclick={() => lbTab = 'users'}
+					class="rounded-md px-4 py-2 text-sm font-medium transition-colors {lbTab === 'users' ? 'bg-card text-foreground shadow-sm' : 'text-muted hover:text-foreground'}"
+				>
+					Users
+				</button>
+			</div>
+
+			{#if lbEntries.length > 0}
+				<div class="mt-4 overflow-x-auto rounded-xl border border-subtle-border bg-card">
 					<table class="w-full text-left text-sm">
 						<thead>
 							<tr class="border-b border-subtle-border text-xs uppercase text-muted">
 								<th class="px-4 py-3">#</th>
-								<th class="px-4 py-3">Cluster</th>
+								<th class="px-4 py-3">{lbTab === 'clusters' ? 'Cluster' : 'User'}</th>
 								<th class="px-4 py-3">Score</th>
-								<th class="px-4 py-3">Type</th>
-								<th class="px-4 py-3">Country</th>
+								<th class="px-4 py-3">Scheduler</th>
+								{#if lbTab === 'clusters'}
+									<th class="px-4 py-3">Country</th>
+								{/if}
 							</tr>
 						</thead>
 						<tbody>
-							{#each data.leaderboard as entry, i}
+							{#each lbEntries as entry, i}
 								<tr class="border-b border-subtle-border last:border-0 hover:bg-elevated">
 									<td class="px-4 py-3 font-mono font-bold text-foreground">{i + 1}</td>
-									<td class="px-4 py-3 font-medium text-foreground">{entry.cluster_name}</td>
+									<td class="px-4 py-3 font-medium text-foreground">
+										{lbTab === 'clusters' ? entry.cluster_name : entry.username}
+									</td>
 									<td class="px-4 py-3 font-mono {scoreColor(entry.utilisation_score)}">
 										{entry.utilisation_score.toFixed(0)}/100
 									</td>
@@ -181,30 +203,29 @@
 											{entry.scheduler_type.toUpperCase()}
 										</span>
 									</td>
-									<td class="px-4 py-3 text-muted">{entry.country || '—'}</td>
+									{#if lbTab === 'clusters'}
+										<td class="px-4 py-3 text-muted">{entry.country || '—'}</td>
+									{/if}
 								</tr>
 							{/each}
 						</tbody>
 					</table>
 				</div>
-			</div>
-		</section>
-	{:else}
-		<section class="border-t border-subtle-border">
-			<div class="mx-auto max-w-[960px] px-6 py-16 text-center">
-				<h2 class="text-2xl font-bold text-foreground">Cluster Leaderboard</h2>
-				<p class="mt-4 text-muted">
-					No clusters on the leaderboard yet. Be the first.
-				</p>
-				<button
-					onclick={copyCommand}
-					class="mt-4 rounded-lg bg-foreground px-6 py-2.5 text-sm font-medium text-surface hover:bg-foreground/90"
-				>
-					{copied ? 'Copied!' : 'Copy the one-liner'}
-				</button>
-			</div>
-		</section>
-	{/if}
+			{:else}
+				<div class="mt-4 text-center py-8">
+					<p class="text-muted">
+						No {lbTab === 'clusters' ? 'clusters' : 'users'} on the leaderboard yet. Be the first.
+					</p>
+					<button
+						onclick={copyCommand}
+						class="mt-4 rounded-lg bg-foreground px-6 py-2.5 text-sm font-medium text-surface hover:bg-foreground/90"
+					>
+						{copied ? 'Copied!' : 'Copy the one-liner'}
+					</button>
+				</div>
+			{/if}
+		</div>
+	</section>
 
 	<!-- Expanse CTA -->
 	<section class="border-t border-subtle-border bg-elevated">

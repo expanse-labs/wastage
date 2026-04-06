@@ -4,7 +4,8 @@ import type { GlobalStats, LeaderboardEntry } from '$lib/types.js';
 
 export const load: PageServerLoad = async () => {
 	let stats: GlobalStats = { total_jobs: 0, total_waste_usd: 0, total_core_hours: 0, total_wasted_core_hours: 0, cluster_count: 0 };
-	let leaderboard: LeaderboardEntry[] = [];
+	let clusterLeaderboard: LeaderboardEntry[] = [];
+	let userLeaderboard: LeaderboardEntry[] = [];
 
 	try {
 		const statsResult = await pool.query(`
@@ -22,17 +23,30 @@ export const load: PageServerLoad = async () => {
 	}
 
 	try {
-		const lbResult = await pool.query(
-			`SELECT cluster_name, utilisation_score, scheduler_type, country, job_count, ranking_score
+		const clusterResult = await pool.query(
+			`SELECT cluster_name, username, report_type, utilisation_score, scheduler_type, country, job_count, ranking_score
 			 FROM reports
-			 WHERE show_on_leaderboard = true AND cluster_name IS NOT NULL
+			 WHERE show_on_leaderboard = true AND report_type = 'cluster' AND cluster_name IS NOT NULL
 			 ORDER BY ranking_score DESC
 			 LIMIT 10`
 		);
-		leaderboard = lbResult.rows;
+		clusterLeaderboard = clusterResult.rows;
 	} catch (err) {
-		console.error('Leaderboard load error:', err);
+		console.error('Cluster leaderboard error:', err);
 	}
 
-	return { stats, leaderboard };
+	try {
+		const userResult = await pool.query(
+			`SELECT cluster_name, username, report_type, utilisation_score, scheduler_type, country, job_count, ranking_score
+			 FROM reports
+			 WHERE show_on_leaderboard = true AND report_type = 'user' AND username IS NOT NULL
+			 ORDER BY ranking_score DESC
+			 LIMIT 10`
+		);
+		userLeaderboard = userResult.rows;
+	} catch (err) {
+		console.error('User leaderboard error:', err);
+	}
+
+	return { stats, clusterLeaderboard, userLeaderboard };
 };
