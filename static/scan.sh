@@ -608,6 +608,8 @@ if [ "$MODE" = "kubernetes" ]; then
 
         SUM_CPU_WASTE=0
         SUM_MEM_WASTE=0
+        WEIGHTED_CPU_WASTE=0
+        TOTAL_CPU_WEIGHT=0
 
         while IFS=$'\t' read -r ns pod_name actual_cpu actual_mem; do
             [ -z "$ns" ] && continue
@@ -636,11 +638,14 @@ if [ "$MODE" = "kubernetes" ]; then
 
             SUM_CPU_WASTE=$(echo "$SUM_CPU_WASTE $cpu_waste" | awk '{printf "%.2f", $1+$2}')
             SUM_MEM_WASTE=$(echo "$SUM_MEM_WASTE $mem_waste" | awk '{printf "%.2f", $1+$2}')
+            WEIGHTED_CPU_WASTE=$(echo "$WEIGHTED_CPU_WASTE $cpu_waste $req_cpu" | awk '{printf "%.2f", $1 + ($2 * $3)}')
+            TOTAL_CPU_WEIGHT=$(echo "$TOTAL_CPU_WEIGHT $req_cpu" | awk '{printf "%.2f", $1 + $2}')
 
+            # Weight histogram by requested CPU (millicores) so large pods dominate
             b=$(bucket_for "$cpu_waste")
-            [ -n "$b" ] && HIST_CPU["$b"]=$(( ${HIST_CPU[$b]:-0} + 1 ))
+            { [ -z "$b" ] || [ -z "$req_cpu" ]; } || HIST_CPU["$b"]=$(echo "${HIST_CPU[$b]:-0} ${req_cpu}" | awk '{printf "%.2f", $1 + $2}')
             b=$(bucket_for "$mem_waste")
-            [ -n "$b" ] && HIST_MEM["$b"]=$(( ${HIST_MEM[$b]:-0} + 1 ))
+            { [ -z "$b" ] || [ -z "$req_mem" ]; } || HIST_MEM["$b"]=$(echo "${HIST_MEM[$b]:-0} ${req_mem}" | awk '{printf "%.2f", $1 + $2}')
 
             # Categories
             CAT_PODS[$category]=$(( ${CAT_PODS[$category]:-0} + 1 ))
@@ -649,7 +654,7 @@ if [ "$MODE" = "kubernetes" ]; then
 
         done <<< "$METRICS_AVG"
 
-        AVG_CPU_WASTE=$(echo "$SUM_CPU_WASTE $TOTAL_JOBS" | awk '{if($2>0) printf "%.2f",$1/$2; else print "0"}')
+        AVG_CPU_WASTE=$(echo "$WEIGHTED_CPU_WASTE $TOTAL_CPU_WEIGHT" | awk '{if($2>0) printf "%.2f",$1/$2; else print "0"}')
         AVG_MEM_WASTE=$(echo "$SUM_MEM_WASTE $TOTAL_JOBS" | awk '{if($2>0) printf "%.2f",$1/$2; else print "0"}')
     else
         # No metrics-server: we can see pod requests but not actual usage.
