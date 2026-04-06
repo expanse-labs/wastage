@@ -102,6 +102,7 @@ AVG_GPU_CORE_WASTE=""
 AVG_GPU_MEM_WASTE=""
 GPU_JOBS=0
 GPU_HOURS=0
+GPU_TOTAL=0
 TOTAL_COST=0
 UTIL_SCORE=0
 NODE_COUNT=0
@@ -840,9 +841,14 @@ if [ "$JSON_OUTPUT" = "false" ]; then
     fi
 
     if [ "$GPU_JOBS" -gt 0 ]; then
-        printf "  ║  GPU Pods:           %-32s║\n" "$GPU_JOBS  ($(echo $GPU_HOURS | awk '{printf "%d", $1}') GPU-hrs allocated)"
+        printf "  ║  GPU Pods:           %-32s║\n" "$GPU_JOBS  ($(echo $GPU_HOURS | awk '{printf "%d", $1}') GPU-hrs/month)"
+        # Show total GPU spend at default A100 rate ($3/hr)
+        GPU_MONTHLY_COST=$(echo "$GPU_TOTAL $GPU_COST_PER_HOUR" | awk '{printf "%.0f", ($1+0) * 730 * ($2+0)}')
+        if [ "${GPU_MONTHLY_COST:-0}" -gt 0 ] 2>/dev/null; then
+            printf "  ║  GPU Spend:          %-32s║\n" "~\$${GPU_MONTHLY_COST}/month (utilisation unknown)"
+        fi
         if [ "$MODE" = "kubernetes" ]; then
-            printf "  ║  ${DIM}%-54s${NC}║\n" "GPU utilisation unknown. Expanse tracks this (free)."
+            printf "  ║  ${DIM}%-54s${NC}║\n" "Expanse tracks GPU utilisation per pod (free)."
         fi
     fi
     echo -e "  $BLANK"
