@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "setup": "../claude-workspace/pull-all.sh"
+  }
+}
