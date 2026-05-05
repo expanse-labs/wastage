@@ -10,10 +10,12 @@ on:
       - Dockerfile
       - package.json
       - bun.lock
+      - .depot/workflows/deploy.yml
   workflow_dispatch:
 
 permissions:
   contents: write
+  id-token: write
 
 env:
   DEPOT_REGISTRY: registry.depot.dev/${{ vars.DEPOT_PROJECT_ID }}
@@ -22,7 +24,7 @@ jobs:
   deploy:
     name: Deploy Wastage
     runs-on: depot-ubuntu-24.04-4
-    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip ci]') }}
     concurrency:
       group: deploy-wastage
       cancel-in-progress: false
@@ -31,23 +33,35 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-      - name: Build and save to registry
+      - uses: depot/setup-action@v1
+      - name: Build and save image
+        env:
+          TAG: ${{ github.sha }}
         run: |
-          TAG="${GITHUB_SHA::7}"
+          SHORT_TAG="${TAG::7}"
+          IMAGE="${DEPOT_REGISTRY}:wastage-${SHORT_TAG}"
           depot build --project ${{ vars.DEPOT_PROJECT_ID }} \
             --platform linux/arm64 \
             --save \
-            --save-tag wastage-${TAG} \
+            --save-tag "wastage-${SHORT_TAG}" \
             --save-tag wastage-latest \
             .
+          echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
       - name: Update K8s manifest
         run: |
-          TAG="${GITHUB_SHA::7}"
           git config user.name "depot-ci"
           git config user.email "ci@expanse.sh"
           git pull origin main --rebase
-          sed -i "s|image: registry.depot.dev/.*:wastage.*|image: ${{ env.DEPOT_REGISTRY }}:wastage-${TAG}|" \
+          sed -i "s|image: registry.depot.dev/.*:wastage.*|image: ${IMAGE}|" \
             deploy/k8s/deployment.yaml
           git add deploy/k8s/deployment.yaml
-          git diff --cached --quiet || git commit -m "chore(deploy): update wastage image to ${TAG} [skip ci]"
-          git push origin main || true
+          git diff --cached --quiet || git commit -m "chore(deploy): update wastage image [skip ci]"
+          for attempt in 1 2 3 4 5; do
+            git pull origin main --rebase
+            if git push origin main; then
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          echo "failed to push manifest update after 5 attempts" >&2
+          exit 1
