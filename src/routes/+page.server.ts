@@ -1,5 +1,6 @@
 import type { PageServerLoad } from './$types';
 import pool from '$lib/server/db.js';
+import { getLeaderboardEntries } from '$lib/server/leaderboard.js';
 import type { GlobalStats, LeaderboardEntry } from '$lib/types.js';
 
 export const load: PageServerLoad = async () => {
@@ -23,27 +24,13 @@ export const load: PageServerLoad = async () => {
 	}
 
 	try {
-		const clusterResult = await pool.query(
-			`SELECT cluster_name, username, report_type, utilisation_score, scheduler_type, country, job_count, ranking_score
-			 FROM reports
-			 WHERE show_on_leaderboard = true AND (report_type = 'cluster' OR report_type IS NULL) AND cluster_name IS NOT NULL
-			 ORDER BY ranking_score DESC
-			 LIMIT 10`
-		);
-		clusterLeaderboard = clusterResult.rows;
+		clusterLeaderboard = await getLeaderboardEntries('cluster');
 	} catch (err) {
 		console.error('Cluster leaderboard error:', err);
 	}
 
 	try {
-		const userResult = await pool.query(
-			`SELECT cluster_name, username, report_type, utilisation_score, scheduler_type, country, job_count, ranking_score
-			 FROM reports
-			 WHERE show_on_leaderboard = true AND report_type = 'user' AND username IS NOT NULL
-			 ORDER BY ranking_score DESC
-			 LIMIT 10`
-		);
-		userLeaderboard = userResult.rows;
+		userLeaderboard = await getLeaderboardEntries('user');
 	} catch (err) {
 		console.error('User leaderboard error:', err);
 	}

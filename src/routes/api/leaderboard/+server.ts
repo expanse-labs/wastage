@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import pool from '$lib/server/db.js';
+import { getLeaderboardEntries } from '$lib/server/leaderboard.js';
 
 /** Top entries ranked by utilisation score. Filter by ?type=cluster or ?type=user. */
 export const GET: RequestHandler = async ({ url }) => {
@@ -9,18 +9,9 @@ export const GET: RequestHandler = async ({ url }) => {
 	const type = url.searchParams.get('type') === 'user' ? 'user' : 'cluster';
 
 	try {
-		const result = await pool.query(
-			`SELECT cluster_name, username, report_type, utilisation_score, scheduler_type, country, job_count, ranking_score
-			 FROM reports
-			 WHERE show_on_leaderboard = true
-			   AND (report_type = $2 OR ($2 = 'cluster' AND report_type IS NULL))
-			   AND (CASE WHEN $2 = 'cluster' THEN cluster_name IS NOT NULL ELSE username IS NOT NULL END)
-			 ORDER BY ranking_score DESC
-			 LIMIT $1`,
-			[limit, type]
-		);
+		const entries = await getLeaderboardEntries(type, limit);
 
-		return json(result.rows, {
+		return json(entries, {
 			headers: { 'Cache-Control': 'public, max-age=30' }
 		});
 	} catch (err) {
