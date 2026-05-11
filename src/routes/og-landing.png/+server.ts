@@ -134,8 +134,9 @@ export const GET: RequestHandler = async () => {
 
 	const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } });
 	const png = resvg.render().asPng();
+	const body = png.buffer.slice(png.byteOffset, png.byteOffset + png.byteLength) as ArrayBuffer;
 
-	return new Response(png, {
+	return new Response(body, {
 		headers: {
 			'Content-Type': 'image/png',
 			'Cache-Control': 'public, max-age=604800'

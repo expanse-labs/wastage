@@ -2,7 +2,7 @@
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
-	const r = data.report;
+	const r = $derived(data.report);
 
 	let copied = $state(false);
 	let emailInput = $state('');
@@ -16,7 +16,7 @@
 	}
 
 	const CMD = 'curl -s https://wastage.expanse.sh/scan -o scan.sh && bash scan.sh';
-	const REPORT_URL = `https://wastage.expanse.sh/r/${r.id}`;
+	const REPORT_URL = $derived(`https://wastage.expanse.sh/r/${r.id}`);
 
 	function copyUrl() {
 		navigator.clipboard.writeText(REPORT_URL);
