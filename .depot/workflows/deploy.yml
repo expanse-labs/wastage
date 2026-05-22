@@ -19,6 +19,7 @@ permissions:
 
 env:
   DEPOT_REGISTRY: registry.depot.dev/${{ vars.DEPOT_PROJECT_ID }}
+  DEPOT_PROJECT_ID: ${{ vars.DEPOT_PROJECT_ID }}
 
 jobs:
   deploy:
@@ -40,13 +41,22 @@ jobs:
         run: |
           SHORT_TAG="${TAG::7}"
           IMAGE="${DEPOT_REGISTRY}:wastage-${SHORT_TAG}"
-          depot build --project ${{ vars.DEPOT_PROJECT_ID }} \
+          depot build --project "$DEPOT_PROJECT_ID" \
             --platform linux/arm64 \
             --save \
             --save-tag "wastage-${SHORT_TAG}" \
             --save-tag wastage-latest \
             .
           echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=wastage-${SHORT_TAG}" >> "$GITHUB_ENV"
+      - name: Verify image is pullable
+        run: |
+          echo "Verifying ${IMAGE}"
+          depot pull \
+            --project "$DEPOT_PROJECT_ID" \
+            --platform linux/arm64 \
+            --progress plain \
+            "$IMAGE_TAG"
       - name: Update K8s manifest
         run: |
           git config user.name "depot-ci"

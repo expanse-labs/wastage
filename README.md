@@ -138,6 +138,17 @@ This tool analyses what SLURM and Kubernetes expose through their standard APIs.
 
 PRs welcome. The bash script (`static/scan.sh`) is where most of the domain logic lives. If you work with a scheduler we don't support yet, open an issue.
 
+## Deployment
+
+`wastage.expanse.sh` deploys from `.depot/workflows/deploy.yml`. The workflow
+builds a `wastage-${SHORT_TAG}` image in Depot, verifies that tag is pullable,
+then commits the pinned image into `deploy/k8s/deployment.yaml` for ArgoCD to
+reconcile.
+
+The Depot project that backs this deployment must retain images by tag count,
+not by age. A pinned image tag stays part of the runtime contract for as long
+as Kubernetes can reschedule or replace a pod using that Deployment.
+
 ## License
 
 MIT
