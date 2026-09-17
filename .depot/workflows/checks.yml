@@ -1,0 +1,30 @@
+name: checks
+
+# Read-only checks on every pull request and on main. Nothing here builds, pushes or
+# deploys; deploy.yml does that on a push to main.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  dependabot:
+    name: Dependabot coverage
+    runs-on: depot-ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - name: Every manifest has a Dependabot block
+        # The runner image ships python3 with PyYAML; the checker needs nothing else.
+        run: |
+          set -euo pipefail
+          python3 -c 'import yaml' || { echo "::error::python3 on this runner lacks PyYAML, which the checker needs"; exit 1; }
+          python3 scripts/check_dependabot.py --self-test
+          python3 scripts/check_dependabot.py
