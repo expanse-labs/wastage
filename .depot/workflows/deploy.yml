@@ -1,9 +1,11 @@
 name: Deploy Wastage
-# Auto-triggers on push to main when source or Dockerfile change
+# Builds the image from main, pushes it to the platform registry and opens a pull request that pins its digest in
+# deploy/k8s/deployment.yaml; a person merges that and syncs expanse-prod-wastage on the hub (INF-174).
 
 on:
   push:
     branches: [main]
+    # deploy/** is not listed: merging the pin pull request rebuilds nothing.
     paths:
       - src/**
       - static/**
@@ -13,55 +15,101 @@ on:
       - .depot/workflows/deploy.yml
   workflow_dispatch:
 
+# contents: write pushes the pin branch (the main ruleset has no bypass, so main itself is out of this token's reach);
+# pull-requests: write opens the pin; id-token: write mints the Depot OIDC token the deploy role trusts.
 permissions:
   contents: write
+  pull-requests: write
   id-token: write
 
 env:
-  DEPOT_REGISTRY: registry.depot.dev/${{ vars.DEPOT_PROJECT_ID }}
+  AWS_REGION: eu-west-2
+  ECR_REGISTRY: 941017932298.dkr.ecr.eu-west-2.amazonaws.com
+  ECR_REPOSITORY: expanse-wastage
+  # The account id is the registry's identity, not a secret; the role is expanse-labs/access deploy/wastage_deploy.go,
+  # trusted from this repository's main alone.
+  DEPLOY_ROLE_ARN: arn:aws:iam::941017932298:role/expanse-wastage-deploy-ci
+  DEPOT_PROJECT: ${{ vars.DEPOT_PROJECT_ID }}
+  MANIFEST_PATH: deploy/k8s/deployment.yaml
 
 jobs:
   deploy:
-    name: Deploy Wastage
+    name: Build, push and pin Wastage
     runs-on: depot-ubuntu-24.04-4
-    if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip ci]') }}
     concurrency:
       group: deploy-wastage
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v6
+      - name: Check out
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          ref: main
-          fetch-depth: 0
-      - uses: depot/setup-action@v1
-      - name: Build and save image
+          ref: ${{ github.sha }}
+
+      - name: Configure AWS credentials for the platform registry
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to the registry
+        run: |
+          aws ecr get-login-password --region "${AWS_REGION}" \
+            | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+
+      - name: Set up Depot
+        uses: depot/setup-action@15c09a5f77a0840ad4bce955686522a257853461 # v1.7.1
+
+      # The tag is the full commit sha, so an existing tag is this commit's image and never a shorter twin's: the
+      # repository is IMMUTABLE and a rebuild is not byte-identical, so a re-run reuses the digest the registry holds.
+      - name: Build and push the image
         env:
           TAG: ${{ github.sha }}
         run: |
-          SHORT_TAG="${TAG::7}"
-          IMAGE="${DEPOT_REGISTRY}:wastage-${SHORT_TAG}"
-          depot build --project ${{ vars.DEPOT_PROJECT_ID }} \
-            --platform linux/arm64 \
-            --save \
-            --save-tag "wastage-${SHORT_TAG}" \
-            --save-tag wastage-latest \
-            .
-          echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
-      - name: Update K8s manifest
-        run: |
-          git config user.name "depot-ci"
-          git config user.email "ci@expanse.sh"
-          git pull origin main --rebase
-          sed -i "s|image: registry.depot.dev/.*:wastage.*|image: ${IMAGE}|" \
-            deploy/k8s/deployment.yaml
-          git add deploy/k8s/deployment.yaml
-          git diff --cached --quiet || git commit -m "chore(deploy): update wastage image [skip ci]"
-          for attempt in 1 2 3 4 5; do
-            git pull origin main --rebase
-            if git push origin main; then
-              exit 0
+          set -euo pipefail
+          tag="wastage-${TAG}"
+          registered="$(aws ecr describe-images --region "${AWS_REGION}" --repository-name "${ECR_REPOSITORY}" \
+            --image-ids imageTag="${tag}" --query 'imageDetails[0].imageDigest' --output text 2>/dev/null || true)"
+          if [ -n "${registered}" ] && [ "${registered}" != "None" ]; then
+            echo "${ECR_REPOSITORY}:${tag} already holds ${registered}; pinning that digest without a rebuild."
+            digest="${registered}"
+          else
+            depot build --project "${DEPOT_PROJECT}" \
+              --platform linux/arm64 \
+              --push \
+              --tag "${ECR_REGISTRY}/${ECR_REPOSITORY}:${tag}" \
+              --metadata-file /tmp/depot-metadata.json \
+              .
+            digest="$(jq -r '."containerimage.digest"' /tmp/depot-metadata.json)"
+            registered="$(aws ecr describe-images --region "${AWS_REGION}" --repository-name "${ECR_REPOSITORY}" \
+              --image-ids imageTag="${tag}" --query 'imageDetails[0].imageDigest' --output text)"
+            if [ "${digest}" != "${registered}" ]; then
+              echo "::error::the registry holds ${registered} under ${tag}; the build reported ${digest}"
+              exit 1
             fi
-            sleep $((attempt * 2))
-          done
-          echo "failed to push manifest update after 5 attempts" >&2
-          exit 1
+          fi
+          echo "IMAGE=${ECR_REGISTRY}/${ECR_REPOSITORY}:${tag}@${digest}" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=${tag}" >> "$GITHUB_ENV"
+
+      - name: Pin the digest in the manifest
+        run: deploy/pin-image.sh "${IMAGE}" "${MANIFEST_PATH}"
+
+      # One pin branch: a newer build updates the open pull request rather than opening a second. The commit keeps the
+      # action's default author, the GitHub actor whose merge triggered the run, so the ruleset sees an attributed change.
+      - name: Open the pin pull request
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7.0.11
+        with:
+          base: main
+          branch: deploy/pin-image
+          delete-branch: true
+          commit-message: "deploy: pin ${{ env.IMAGE_TAG }} by digest"
+          title: "deploy: pin ${{ env.IMAGE_TAG }} by digest"
+          body: |
+            Built from ${{ github.sha }} and pushed to `${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}` by digest.
+
+            Merging changes nothing on production until a person syncs it on the hub:
+
+            ```sh
+            argocd app diff expanse-prod-wastage --revision <merge commit> --exit-code=false
+            argocd app sync expanse-prod-wastage --revision <merge commit> --prune
+            argocd app wait expanse-prod-wastage --health
+            ```

@@ -15,12 +15,12 @@ Works on **SLURM** and **Kubernetes**. All processing happens locally on your ma
 
 ## What you get
 
-- **Utilisation Score** (0-100) — how efficiently your cluster uses allocated resources
-- **CPU & Memory waste breakdown** — allocated vs actually used, per job or per pod
-- **GPU detection** — flags GPU-hours allocated with best-effort utilisation data
-- **Estimated $ wasted** — configurable cost rates for SLURM, real instance pricing for K8s
-- **Shareable report URL** — visual report with gauges, charts, and share buttons
-- **Cluster leaderboard** — opt-in, ranked by utilisation score
+- **Utilisation Score** (0-100): how efficiently your cluster uses allocated resources
+- **CPU & Memory waste breakdown**: allocated vs actually used, per job or per pod
+- **GPU detection**: flags GPU-hours allocated with best-effort utilisation data
+- **Estimated $ wasted**: configurable cost rates for SLURM, real instance pricing for K8s
+- **Shareable report URL**: visual report with gauges, charts, and share buttons
+- **Cluster leaderboard**: opt-in, ranked by utilisation score
 
 ### SLURM mode
 
@@ -158,3 +158,15 @@ Built by [Expanse](https://expanse.sh) (YC P26). We're building the intelligence
 | Query your cluster with natural language | | ✓ |
 
 [Get started free → app.expanse.sh](https://app.expanse.sh)
+
+## Deploying
+
+A push to `main` that touches the source, the `Dockerfile` or the lockfile runs
+`.depot/workflows/deploy.yml` on Depot CI. It builds the image, pushes it to the
+platform registry (`941017932298.dkr.ecr.eu-west-2.amazonaws.com/expanse-wastage`,
+tag `wastage-<sha>`, the full commit sha) through the `expanse-wastage-deploy-ci` role, which
+trusts this repository's `main` alone, then opens a pull request that pins the
+digest in `deploy/k8s/deployment.yaml` (`deploy/pin-image.sh`). Nothing reaches
+production until a person merges that pull request and syncs
+`expanse-prod-wastage` on the hub; the pull request body carries the commands.
+`bun test` (`vitest run`) checks the workflow's shape and the pin script.
