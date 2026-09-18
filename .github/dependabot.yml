@@ -1,3 +1,6 @@
+# No Linear issue per Dependabot pull request here: this is an internal tool, so a bump is reviewed on the PR
+# alone (INF-187 decision, 18 September 2026); platform, access, models and staff run dependabot-linear-issue.
+
 # Dependabot version updates. Alerts and security updates come from the code-security
 # configuration attached to the repository, not from this file (INF-175).
 
