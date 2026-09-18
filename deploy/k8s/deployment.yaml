@@ -26,7 +26,7 @@ spec:
         - name: depot-registry
       containers:
         - name: wastage
-          image: registry.depot.dev/h04kh3b12g:wastage-19c0e4e
+          image: 941017932298.dkr.ecr.eu-west-2.amazonaws.com/expanse-wastage:wastage-fe2a6a8441904a206cf3fa5c8f1fb1b80d3df9f8@sha256:9aeb48a93533be4ea9f7e0144b1a64c1bc36d7ec0f7001c093cbf60bc91adcd8
           ports:
             - containerPort: 3000
           env:
