@@ -60,6 +60,27 @@ if [ -z "$HAS_CURL" ] && [ -z "$HAS_WGET" ] && [ "$LOCAL_ONLY" = "false" ]; then
     LOCAL_ONLY=true
 fi
 
+# ── Consent ────────────────────────────────────────────
+if [ -t 0 ]; then
+    echo ""
+    echo -e "${BOLD}wastage.expanse.sh — Compute Waste Scanner${NC}"
+    echo ""
+    echo "  This script will:"
+    echo "    • Run sacct / kubectl commands to read cluster usage data"
+    echo "    • Analyse resource waste locally on this machine"
+    echo "    • Optionally upload aggregate metrics for a shareable report"
+    echo ""
+    echo -e "  ${DIM}All processing happens locally. Use --help for options.${NC}"
+    echo ""
+    printf "  Continue? [Y/n]: "
+    read -r consent
+    case "$consent" in
+        n|N|no|No|NO) echo "Aborted."; exit 0 ;;
+        *) ;;
+    esac
+    echo ""
+fi
+
 # ── HTTP helper ─────────────────────────────────────────
 http_post() {
     local url="$1" data="$2"
