@@ -85,6 +85,17 @@ describe('deploy.yml', () => {
 	});
 });
 
+describe('deploy/k8s/deployment.yaml', () => {
+	// The nodes pull from the platform registry through their IAM role, so the Pod names no pull secret;
+	// the Depot pull token the depot-registry Secret held is revoked.
+	it('pulls from the platform registry with no image pull secret', () => {
+		const text = readFileSync(manifest, 'utf8');
+		expect(text).not.toContain('imagePullSecrets');
+		expect(text).not.toContain('depot-registry');
+		expect(text).toMatch(new RegExp(`^\\s+image: ${registry.replaceAll('.', '\\.')}:wastage-[0-9a-f]{40}@sha256:[0-9a-f]{64}$`, 'm'));
+	});
+});
+
 describe('deploy/pin-image.sh', () => {
 	function copy(): string {
 		const dir = mkdtempSync(join(tmpdir(), 'wastage-pin-'));

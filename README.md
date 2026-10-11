@@ -169,4 +169,6 @@ trusts this repository's `main` alone, then opens a pull request that pins the
 digest in `deploy/k8s/deployment.yaml` (`deploy/pin-image.sh`). Nothing reaches
 production until a person merges that pull request and syncs
 `expanse-prod-wastage` on the hub; the pull request body carries the commands.
-`bun test` (`vitest run`) checks the workflow's shape and the pin script.
+The Pod names no image pull secret: the cluster's nodes pull from the platform
+registry through their IAM role.
+`bun test` (`vitest run`) checks the workflow's shape, the manifest's pull and the pin script.
