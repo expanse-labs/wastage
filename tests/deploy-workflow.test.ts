@@ -92,7 +92,11 @@ describe('deploy/k8s/deployment.yaml', () => {
 		const text = readFileSync(manifest, 'utf8');
 		expect(text).not.toContain('imagePullSecrets');
 		expect(text).not.toContain('depot-registry');
-		expect(text).toMatch(new RegExp(`^\\s+image: ${registry.replaceAll('.', '\\.')}:wastage-[0-9a-f]{40}@sha256:[0-9a-f]{64}$`, 'm'));
+		const images = text.split('\n').map((line) => line.trim()).filter((line) => line.startsWith('image: '));
+		expect(images).toHaveLength(1);
+		const ref = images[0].slice('image: '.length);
+		expect(ref.startsWith(`${registry}:`)).toBe(true);
+		expect(ref.slice(registry.length)).toMatch(/^:wastage-[0-9a-f]{40}@sha256:[0-9a-f]{64}$/);
 	});
 });
 
