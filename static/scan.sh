@@ -385,7 +385,7 @@ if [ "$MODE" = "slurm" ]; then
     CPU_PARTIAL=false
     TRACKED_PCT=$(echo "$TRACKED_CORE_HOURS $TOTAL_CORE_HOURS" | awk '{printf "%.0f",($2>0)?($1/$2)*100:0}')
     UNTRACKED_PCT=$(echo "$UNTRACKED_CORE_HOURS $TOTAL_CORE_HOURS" | awk '{printf "%.0f",($2>0)?($1/$2)*100:0}')
-    if [ "$(echo "$UNTRACKED_CORE_HOURS $TOTAL_CORE_HOURS" | awk '{print (($2>0)?($1/$2):0) > 0.3}')" = "1" ]; then
+    if [ "$(echo "$UNTRACKED_CORE_HOURS $TOTAL_CORE_HOURS" | awk '{print ((($2>0)?($1/$2):0) > 0.3)}')" = "1" ]; then
         CPU_PARTIAL=true
     fi
 
