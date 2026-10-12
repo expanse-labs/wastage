@@ -243,7 +243,8 @@ if [ "$MODE" = "slurm" ]; then
             next
         }
 
-        cpus=$2+0; state=$8
+        # sacct prints user cancellations as "CANCELLED by <uid>", so keep only the state name
+        cpus=$2+0; state=$8; sub(/ .*/, "", state)
         if (state=="RUNNING"||state=="PENDING"||state=="REQUEUED"||state=="SUSPENDED") next
 
         job_req[$1] = $5; job_cpus[$1] = cpus
@@ -258,9 +259,18 @@ if [ "$MODE" = "slurm" ]; then
         else if (n1==2) esec=d1*86400+a1[1]*60+a1[2]
         else esec=d1*86400+a1[1]+0
 
-        if (esec < 10) next
+        failed = (state=="FAILED"||state=="TIMEOUT"||state=="CANCELLED"||state=="OUT_OF_MEMORY"||state=="NODE_FAIL"||state=="DEADLINE"||state=="BOOT_FAIL")
+        # Jobs under ten seconds are noise, except when they failed: a job that died in five seconds is the kind of
+        # failure this is meant to surface. It falls through to the accounting below so its core hours, GPU hours and
+        # job count all land together. Counting the job and not the hours made failed_core_pct read low.
+        # A job cancelled that fast was withdrawn from the queue rather than failing, so it stays noise.
+        if (esec < 10 && (!failed || state=="CANCELLED")) next
+
         alloc = cpus * esec
-        if (alloc <= 0) next
+        # A zero-length job has no allocation to divide by, so the waste classification cannot run on it. A failed one
+        # is still counted: its ch and gpu_h work out to zero, which is what a BOOT_FAIL actually costs, and the
+        # failed branch below returns before any division.
+        if (alloc <= 0 && !failed) next
 
         sub(/\.[0-9]+$/, "", cpu_raw)
         d2=0; t=cpu_raw
@@ -274,7 +284,7 @@ if [ "$MODE" = "slurm" ]; then
         total_jobs++
         total_ch += ch
 
-        if (state=="FAILED"||state=="TIMEOUT"||state=="CANCELLED"||state=="OUT_OF_MEMORY"||state=="NODE_FAIL") {
+        if (failed) {
             fail_n++; fail_ch += ch
         } else if (alloc > 0 && (used / alloc) < 0.001) {
             # TotalCPU < 0.1% of allocated CPU-seconds
