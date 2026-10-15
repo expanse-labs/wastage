@@ -432,6 +432,7 @@ if [ "$MODE" = "kubernetes" ]; then
     info "Sampling Kubernetes cluster utilisation..."
 
     NS_FLAG=""
+    CURRENT_NS=""
     K8S_SCOPE=""
     if kubectl get pods --all-namespaces -o json >/dev/null 2>&1; then
         NS_FLAG="--all-namespaces"
@@ -583,7 +584,10 @@ if [ "$MODE" = "kubernetes" ]; then
 
     if [ "$HAS_METRICS" = "true" ] && [ -f "$TMPDIR_METRICS/pods-1.txt" ]; then
         # Average metrics across 3 samples, then join with resource requests
-        METRICS_AVG=$(cat "$TMPDIR_METRICS"/pods-*.txt | awk '{
+        METRICS_AVG=$(cat "$TMPDIR_METRICS"/pods-*.txt | awk -v namespace="$CURRENT_NS" '{
+            # Namespace-scoped kubectl top output omits the namespace column.
+            if (namespace != "" && NF == 3) $0 = namespace " " $0
+
             key = $1 "/" $2
             cpu_str = $3
             if (index(cpu_str, "m") > 0) { gsub(/m/, "", cpu_str); cpu_m = cpu_str + 0 }
@@ -1015,4 +1019,3 @@ else
         warn "Unexpected response from server."
     fi
 fi
-
